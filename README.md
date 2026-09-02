@@ -69,6 +69,14 @@ Want the full details about the original **llama-cpp-delphi** project?
 
 The original, pre-fork README is preserved as: `README.original.md`
 
+## BINARIES
+
+Get the compatible Llama binaries from https://github.com/Embarcadero/llama-cpp-delphi/releases/tag/main-b3-d4ec316
+
+Place the unziped libraries within the `lib` subdirectory within the path were your compiled executable is located.
+
+The demo SimpleLlamaConsole.dpr from its first lines expects the files from https://github.com/Embarcadero/llama-cpp-delphi/tree/main/samples/SimpleChatWithDownload/lib/windows_x64 within `/lib/` and the files from lib-cuda-cu12.4-x64 within the `/lib-cuda-cu12.4-x64` subdirectory.
+
 ## LICENSE
 
 This project is licensed under the **MIT License**.
