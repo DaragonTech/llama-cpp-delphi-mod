@@ -23,7 +23,6 @@ type
     CompletionTokens: TArray<Integer>;
     PromptTokens: TArray<Integer>;
     ReturnedTokens: Integer;
-    // Generator
     FinishReason: string;
     MultibyteFix: Integer;
     StopSequences: TArray<TBytes>;
@@ -44,70 +43,81 @@ type
     FGenerator: ILlamaGenerator;
     [weak]
     FLlama: ILlama;
+
     function ContainsBytes(
-      const AHayStack, ANeedle: TBytes)
-      : boolean;
+      const AHayStack, ANeedle: TBytes): Boolean;
+
     function EndsWithBytes(
-      const AHayStack, ANeedle: TBytes)
-      : boolean;
+      const AHayStack, ANeedle: TBytes): Boolean;
+
     function CopyBytes(
-      const ASource, ANeedle: TBytes)
-      : TBytes;
+      const ASource, ANeedle: TBytes): TBytes;
+
     function IndexOfBytes(
-      const ASource, ANeedle: TBytes): integer;
+      const ASource, ANeedle: TBytes): Integer;
+
     procedure LoadCache(
       [ref] AData: TCompletionData);
+
     procedure SaveCache(
       [ref] AData: TCompletionData);
+
     procedure CheckStopCriteria(
       [ref] AData: TCompletionData;
       const AStoppingCriteria: IStoppingCriteriaList;
-        var AText: TBytes);
+      var AText: TBytes);
+
     procedure SetupLogitsProcessor(
       [ref] AData: TCompletionData;
       const ASettings: TLlamaCompletionSettings;
-        var ALogitsProcessor: ILogitsProcessorList);
+      var ALogitsProcessor: ILogitsProcessorList);
+
     function ProcessAnyStopStream(
       const AStopSequences: TArray<TBytes>;
-      const ARemainingText: TBytes): integer;
+      const ARemainingText: TBytes): Integer;
+
     function ProcessAnyStopGenerate(
       [ref] LData: TCompletionData;
       const AAllText: TBytes;
-        var AText: TBytes): boolean;
+      var AText: TBytes): Boolean;
+
     function CheckCompleteBytes(
       const AAllText: TBytes;
-        var AMultibyteFix: integer): boolean;
+      var AMultibyteFix: Integer): Boolean;
+
     function ProcessStreamLogprob(
       [ref] AData: TCompletionData;
       const ASettings: TLlamaCompletionSettings;
       const AToken: Integer;
-      const APrompt: TArray<integer>): TCompletionLogprobs;
+      const APrompt: TArray<Integer>): TCompletionLogprobs;
+
     function ProcessGenerateStreamLogprob(
       [ref] AData: TCompletionData;
       const ASettings: TLlamaCompletionSettings;
       const AToken: Integer;
-      const APrompt: TArray<integer>)
-      : TCompletionLogprobs;
+      const APrompt: TArray<Integer>): TCompletionLogprobs;
+
     function ProcessLogprob(
       [ref] AData: TCompletionData;
       const ASettings: TLlamaCompletionSettings;
-      const APrompt: TArray<integer>)
-      : TCompletionLogprobs;
+      const APrompt: TArray<Integer>): TCompletionLogprobs;
+
     function DoGenerate(
       [ref] AData: TCompletionData;
       const ASettings: TLlamaCompletionSettings;
-      const APrompt: TArray<integer>;
-        var AText: TBytes;
+      const APrompt: TArray<Integer>;
+      var AText: TBytes;
       const AToken: TLlamaToken;
-      const AStream: boolean;
-      const ACallback: TCompletionCallback): boolean;
+      const AStream: Boolean;
+      const ACallback: TCompletionCallback): Boolean;
+
   private
     function GenerateRandom(
-      const ASeed: UInt32)
-      : UInt32;
+      const ASeed: UInt32): UInt32;
+
     procedure InternalCreateCompletion(
-      const APrompt: TArray<integer>;
-      const AStream: boolean;
+      const APrompt: TArray<Integer>;
+      const AStream: Boolean;
       ASettings: TLlamaCompletionSettings;
       const ACallback: TCompletionCallback;
       const AStoppingCriteria: IStoppingCriteriaList;
@@ -116,12 +126,13 @@ type
 
     procedure InternalCreateCompletion(
       const APrompt: string;
-      const AStream: boolean;
+      const AStream: Boolean;
       ASettings: TLlamaCompletionSettings;
       const ACallback: TCompletionCallback;
       const AStoppingCriteria: IStoppingCriteriaList;
       ALogitsProcessor: ILogitsProcessorList;
       const AGrammar: ILlamaGrammar); overload;
+
   public
     constructor Create(const ALlama: ILlama);
 
@@ -130,8 +141,8 @@ type
       ASettings: TLlamaCompletionSettings;
       const AStoppingCriteria: IStoppingCriteriaList = nil;
       const ALogitsProcessor: ILogitsProcessorList = nil;
-      const AGrammar: ILlamaGrammar = nil)
-    : TCreateCompletionResponse; overload;
+      const AGrammar: ILlamaGrammar = nil): TCreateCompletionResponse; overload;
+
     procedure CreateCompletion(
       const APrompt: string;
       ASettings: TLlamaCompletionSettings;
@@ -139,15 +150,16 @@ type
       const AStoppingCriteria: IStoppingCriteriaList = nil;
       const ALogitsProcessor: ILogitsProcessorList = nil;
       const AGrammar: ILlamaGrammar = nil); overload;
+
     function CreateCompletion(
-      const APrompt: TArray<integer>;
+      const APrompt: TArray<Integer>;
       ASettings: TLlamaCompletionSettings;
       const AStoppingCriteria: IStoppingCriteriaList = nil;
       const ALogitsProcessor: ILogitsProcessorList = nil;
-      const AGrammar: ILlamaGrammar = nil)
-    : TCreateCompletionResponse; overload;
+      const AGrammar: ILlamaGrammar = nil): TCreateCompletionResponse; overload;
+
     procedure CreateCompletion(
-      const APrompt: TArray<integer>;
+      const APrompt: TArray<Integer>;
       ASettings: TLlamaCompletionSettings;
       const ACallback: TCompletionCallback;
       const AStoppingCriteria: IStoppingCriteriaList = nil;
@@ -181,22 +193,38 @@ begin
 end;
 
 function TLlamaCompletion.GenerateRandom(const ASeed: UInt32): UInt32;
+var
+  LSeed: UInt32;
 begin
-  DefaultRandomize(ASeed);
-  Result := DefaultRandom32();
+  LSeed := ASeed;
+
+  if LSeed = 0 then
+    LSeed :=
+      UInt32(DateTimeToUnix(Now)) xor
+      UInt32(MilliSecondOfTheDay(Now));
+
+  Result :=
+    (LSeed * UInt32(1664525)) +
+    UInt32(1013904223);
+
+  if Result = 0 then
+    Result := 1;
 end;
 
-procedure TLlamaCompletion.InternalCreateCompletion(const APrompt: string;
-  const AStream: boolean; ASettings: TLlamaCompletionSettings;
+procedure TLlamaCompletion.InternalCreateCompletion(
+  const APrompt: string;
+  const AStream: Boolean;
+  ASettings: TLlamaCompletionSettings;
   const ACallback: TCompletionCallback;
   const AStoppingCriteria: IStoppingCriteriaList;
-  ALogitsProcessor: ILogitsProcessorList; const AGrammar: ILlamaGrammar);
+  ALogitsProcessor: ILogitsProcessorList;
+  const AGrammar: ILlamaGrammar);
 var
-  LPrompt: TArray<integer>;
+  LPrompt: TArray<Integer>;
 begin
   LPrompt := FTokenization.Encode(
     APrompt,
-    false,
+    False,
     (FModel.TokenPrefix() < 0) or ASettings.Suffix.IsEmpty());
 
   InternalCreateCompletion(
@@ -210,13 +238,16 @@ begin
 end;
 
 procedure TLlamaCompletion.InternalCreateCompletion(
-  const APrompt: TArray<integer>; const AStream: boolean;
-  ASettings: TLlamaCompletionSettings; const ACallback: TCompletionCallback;
+  const APrompt: TArray<Integer>;
+  const AStream: Boolean;
+  ASettings: TLlamaCompletionSettings;
+  const ACallback: TCompletionCallback;
   const AStoppingCriteria: IStoppingCriteriaList;
-  ALogitsProcessor: ILogitsProcessorList; const AGrammar: ILlamaGrammar);
+  ALogitsProcessor: ILogitsProcessorList;
+  const AGrammar: ILlamaGrammar);
 var
   LData: TCompletionData;
-  LToken: integer;
+  LToken: Integer;
   LTextStr: string;
   LLastText: TBytes;
   LAddSpacePrefix: Boolean;
@@ -236,11 +267,17 @@ var
   LDecodedToken: string;
 begin
   LData := Default(TCompletionData);
-  LData.CompletionId := 'cmpl-' + GUIDToString(TGUID.NewGuid());
+
+  LData.CompletionId :=
+    'cmpl-' + GUIDToString(TGUID.NewGuid());
+
   LData.Created := DateTimeToUnix(Now());
-  LAddSpacePrefix := FMetadata.ContainsKey('tokenizer.ggml.add_space_prefix')
-    and (FMetadata['tokenizer.ggml.add_space_prefix'] = 'true');
-  LContinue := true;
+
+  LAddSpacePrefix :=
+    FMetadata.ContainsKey('tokenizer.ggml.add_space_prefix') and
+    (FMetadata['tokenizer.ggml.add_space_prefix'] = 'true');
+
+  LContinue := True;
 
   if FModel.TokenCLS() <> -1 then
     LBOSTokens := [FModel.TokenCLS()]
@@ -252,52 +289,78 @@ begin
   else
     LEOSTokens := [FModel.TokenEOS()];
 
-  if (Assigned(APrompt) and ASettings.Suffix.IsEmpty())
-    or not FModel.AddBOSToken()
-    or (Assigned(LBOSTokens) and (LBOSTokens[Low(LBOSTokens)] = -1)) then
-      LBOSTokens := nil;
+  if (Assigned(APrompt) and ASettings.Suffix.IsEmpty()) or
+     not FModel.AddBOSToken() or
+     (Assigned(LBOSTokens) and
+      (LBOSTokens[Low(LBOSTokens)] = -1)) then
+    LBOSTokens := nil;
 
-  if (Assigned(APrompt) and ASettings.Suffix.IsEmpty())
-    or (not FModel.AddEOSToken() and (FModel.TokenSEP() = -1)) then
-      LEOSTokens := nil;
+  if (Assigned(APrompt) and ASettings.Suffix.IsEmpty()) or
+     (not FModel.AddEOSToken() and
+      (FModel.TokenSEP() = -1)) then
+    LEOSTokens := nil;
 
-  // Tokenizer hack to remove leading space
   LSuffixSpacePrefix := 0;
-  if LAddSpacePrefix and (FModel.TokenSuffix() >= 0) and not ASettings.Suffix.IsEmpty() then
+
+  if LAddSpacePrefix and
+     (FModel.TokenSuffix() >= 0) and
+     not ASettings.Suffix.IsEmpty() then
   begin
     ASettings.Suffix := '☺' + ASettings.Suffix;
     LSuffixSpacePrefix := 2;
   end;
 
   LData.CompletionTokens := nil;
+
   if not Assigned(APrompt) then
     LData.CompletionTokens := [FModel.TokenBOS()];
 
   LPrefixTokens := nil;
-  if (FModel.TokenPrefix() >= 0) and not ASettings.Suffix.IsEmpty() then
+
+  if (FModel.TokenPrefix() >= 0) and
+     not ASettings.Suffix.IsEmpty() then
     LPrefixTokens := [FModel.TokenPrefix()];
 
   if Assigned(APrompt) then
     LPrefixTokens := LPrefixTokens + APrompt;
 
   LSuffixTokens := nil;
-  if (FModel.TokenSuffix() >= 0) and not ASettings.Suffix.IsEmpty then
+
+  if (FModel.TokenSuffix() >= 0) and
+     not ASettings.Suffix.IsEmpty then
+  begin
     if not ASettings.Suffix.IsEmpty() then
-      LSuffixTokens := [FModel.TokenSuffix()]
-      + TArrayHelper.Slice<integer>(
-          FTokenization.Encode(ASettings.Suffix, false, false),
-            LSuffixSpacePrefix);
+      LSuffixTokens :=
+        [FModel.TokenSuffix()] +
+        TArrayHelper.Slice<Integer>(
+          FTokenization.Encode(
+            ASettings.Suffix,
+            False,
+            False),
+          LSuffixSpacePrefix);
+  end;
 
   LMiddleTokens := nil;
-  if (FModel.TokenMiddle() >= 0) and not ASettings.Suffix.IsEmpty() then
+
+  if (FModel.TokenMiddle() >= 0) and
+     not ASettings.Suffix.IsEmpty() then
     LMiddleTokens := [FModel.TokenMiddle()];
 
   if FSettings.SPMInfill then
-    LData.PromptTokens := LSuffixTokens + LPrefixTokens + LMiddleTokens
+    LData.PromptTokens :=
+      LSuffixTokens +
+      LPrefixTokens +
+      LMiddleTokens
   else
-    LData.PromptTokens := LPrefixTokens + LSuffixTokens + LMiddleTokens;
+    LData.PromptTokens :=
+      LPrefixTokens +
+      LSuffixTokens +
+      LMiddleTokens;
 
-  LData.PromptTokens := LBOSTokens + LData.PromptTokens + LEOSTokens;
+  LData.PromptTokens :=
+    LBOSTokens +
+    LData.PromptTokens +
+    LEOSTokens;
 
   LText := nil;
   LData.ReturnedTokens := 0;
@@ -307,40 +370,55 @@ begin
   else
     LData.ModelName := FModelPath;
 
-  //if (Length(prompt_tokens) > 1) and (prompt_tokens[0] = bos_token_id) and (prompt_tokens[1] = bos_token_id) then
-  // Detected duplicate leading + "Self.FModel.TokenGetText(bos_token_id)" in prompt, this will likely reduce response quality, consider removing it...'
-
-  // NOTE: This likely doesn't work correctly for the first token in the prompt
-  // because of the extra space added to the start of the prompt_tokens
   if Assigned(ASettings.LogitBias) then
-    SetupLogitsProcessor(LData, ASettings, ALogitsProcessor);
+    SetupLogitsProcessor(
+      LData,
+      ASettings,
+      ALogitsProcessor);
 
   if FSettings.Verbose then
     FContext.ResetTimings();
 
   if Length(LData.PromptTokens) >= FContext.NCtx() then
     raise Exception.CreateFmt(
-      'Requested tokens (%d) exceed context window of %d', [
-        Length(LData.PromptTokens), TLlamaApi.Instance.llama_n_ctx(FContext)]);
+      'Requested tokens (%d) exceed context window of %d',
+      [
+        Length(LData.PromptTokens),
+        TLlamaApi.Instance.llama_n_ctx(FContext)
+      ]);
 
   if ASettings.MaxTokens <= 0 then
-    // Unlimited, depending on n_ctx.
-    ASettings.MaxTokens := FContext.NCtx() - Length(LData.PromptTokens);
+    ASettings.MaxTokens :=
+      FContext.NCtx() -
+      Length(LData.PromptTokens);
 
-  // Truncate max_tokens if requested tokens would exceed the context window
-  if not (ASettings.MaxTokens + Length(LData.PromptTokens) < FContext.NCtx()) then
-    ASettings.MaxTokens := FContext.NCtx() - Length(LData.PromptTokens);
+  if not (
+    ASettings.MaxTokens +
+    Length(LData.PromptTokens) <
+    FContext.NCtx()) then
+  begin
+    ASettings.MaxTokens :=
+      FContext.NCtx() -
+      Length(LData.PromptTokens);
+  end;
 
   LData.StopSequences := nil;
+
   for I := Low(ASettings.Stop) to High(ASettings.Stop) do
-    LData.StopSequences := LData.StopSequences
-      + [TEncoding.UTF8.Convert(
+    LData.StopSequences :=
+      LData.StopSequences +
+      [
+        TEncoding.UTF8.Convert(
           TEncoding.Unicode,
           TEncoding.UTF8,
-          TEncoding.Unicode.GetBytes(ASettings.Stop[I]))];
+          TEncoding.Unicode.GetBytes(
+            ASettings.Stop[I]))
+      ];
 
-  if (ASettings.Logprobs > 0) and not FContextParams.LogitsAll then
-    raise Exception.Create('logprobs is not supported for models created with logits_all=False');
+  if (ASettings.Logprobs > 0) and
+     not FContextParams.LogitsAll then
+    raise Exception.Create(
+      'logprobs is not supported for models created with logits_all=False');
 
   if Assigned(FCache) then
     LoadCache(LData);
@@ -348,7 +426,8 @@ begin
   if ASettings.Seed > 0 then
     FSettings.Seed := ASettings.Seed
   else
-    FSettings.Seed := GenerateRandom(FSettings.Seed);
+    FSettings.Seed :=
+      GenerateRandom(FSettings.Seed);
 
   LData.FinishReason := 'length';
   LData.MultibyteFix := 0;
@@ -356,89 +435,131 @@ begin
   FGenerator.Generate(
     LData.PromptTokens,
     ASettings.ToGeneratorSettings(),
-    function(const AToken: integer; var AContinue: boolean): TArray<integer>
+    function(
+      const AToken: Integer;
+      var AContinue: Boolean): TArray<Integer>
     begin
-      AContinue := DoGenerate(
-        LData, ASettings, APrompt, LText, AToken, AStream, ACallback);
-    end, true, AStoppingCriteria, ALogitsProcessor, AGrammar);
+      AContinue :=
+        DoGenerate(
+          LData,
+          ASettings,
+          APrompt,
+          LText,
+          AToken,
+          AStream,
+          ACallback);
+    end,
+    True,
+    AStoppingCriteria,
+    ALogitsProcessor,
+    AGrammar);
 
   if Assigned(AStoppingCriteria) then
-    CheckStopCriteria(LData, AStoppingCriteria, LText);
+    CheckStopCriteria(
+      LData,
+      AStoppingCriteria,
+      LText);
 
   if FSettings.Verbose then
     FContext.PrintTimings();
 
   if AStream then
   begin
-    LRemainingTokens := TArrayHelper.Slice<integer>(
-      LData.CompletionTokens, LData.ReturnedTokens);
+    LRemainingTokens :=
+      TArrayHelper.Slice<Integer>(
+        LData.CompletionTokens,
+        LData.ReturnedTokens);
 
-    LRemainingText := FTokenization.Detokenize(
-      LRemainingTokens,
-      LData.PromptTokens
-    + TArrayHelper.Slice<integer>(
-        LRemainingTokens, Low(LRemainingTokens), LData.ReturnedTokens));
+    LRemainingText :=
+      FTokenization.Detokenize(
+        LRemainingTokens,
+        LData.PromptTokens +
+        TArrayHelper.Slice<Integer>(
+          LRemainingTokens,
+          Low(LRemainingTokens),
+          LData.ReturnedTokens));
 
-    LStopIndex := ProcessAnyStopStream(LData.StopSequences, LRemainingText);
+    LStopIndex :=
+      ProcessAnyStopStream(
+        LData.StopSequences,
+        LRemainingText);
 
     LData.TokenEndPosition := 0;
+
     for LToken in LRemainingTokens do
     begin
-      LData.CompletionLogprobs := Default(TCompletionLogprobs);
+      LData.CompletionLogprobs :=
+        Default(TCompletionLogprobs);
 
-      LData.TokenEndPosition := LData.TokenEndPosition
-    + Length(
-      FTokenization.Detokenize(
-        [LToken],
-        LData.PromptTokens
-      + TArrayHelper.Slice<integer>(
-          LData.CompletionTokens,
-          Low(LData.CompletionTokens),
-          LData.ReturnedTokens)));
+      LData.TokenEndPosition :=
+        LData.TokenEndPosition +
+        Length(
+          FTokenization.Detokenize(
+            [LToken],
+            LData.PromptTokens +
+            TArrayHelper.Slice<Integer>(
+              LData.CompletionTokens,
+              Low(LData.CompletionTokens),
+              LData.ReturnedTokens)));
 
       if ASettings.Logprobs > 0 then
       begin
         if LToken = FModel.TokenBOS() then
           Continue;
 
-        LData.CompletionLogprobs := ProcessStreamLogprob(
-          LData, ASettings, LToken, APrompt);
+        LData.CompletionLogprobs :=
+          ProcessStreamLogprob(
+            LData,
+            ASettings,
+            LToken,
+            APrompt);
       end;
 
       if LData.TokenEndPosition >= LStopIndex then
       begin
-        LLastText := FTokenization.Detokenize([LToken]);
+        LLastText :=
+          FTokenization.Detokenize([LToken]);
 
-        if LData.TokenEndPosition = LStopIndex - 1 then
+        if LData.TokenEndPosition =
+           LStopIndex - 1 then
           Break;
 
         Inc(LData.ReturnedTokens);
 
         LDecodedToken := String.Empty;
+
         try
-          LDecodedToken := TEncoding.UTF8.GetString(
-            TArrayHelper.Slice<byte>(
-              LLastText,
-              Low(LLastText),
-              Length(LLastText) - (LData.TokenEndPosition - LStopIndex)));
+          LDecodedToken :=
+            TEncoding.UTF8.GetString(
+              TArrayHelper.Slice<Byte>(
+                LLastText,
+                Low(LLastText),
+                Length(LLastText) -
+                (LData.TokenEndPosition -
+                 LStopIndex)));
         except
           on E: EEncodingError do
+          begin
+          end;
         end;
-        
-        LCompletionResponse := TCreateCompletionResponse.Create(
-          LData.CompletionId,
-          'text_completion',
-          LData.ModelName,
-          LData.Created,
-          [
-            TCompletionChoice.Create(
-              LDecodedToken,
-              0,
-              LData.CompletionLogprobs)
-          ]
-        );
 
-        ACallback(LCompletionResponse, LContinue);
+        LCompletionResponse :=
+          TCreateCompletionResponse.Create(
+            LData.CompletionId,
+            'text_completion',
+            LData.ModelName,
+            LData.Created,
+            [
+              TCompletionChoice.Create(
+                LDecodedToken,
+                0,
+                LData.CompletionLogprobs)
+            ]);
+
+        ACallback(
+          LCompletionResponse,
+          LContinue);
+
         if not LContinue then
           Exit;
 
@@ -447,39 +568,45 @@ begin
 
       Inc(LData.ReturnedTokens);
 
-      LCompletionResponse := TCreateCompletionResponse.Create(
+      LCompletionResponse :=
+        TCreateCompletionResponse.Create(
+          LData.CompletionId,
+          'text_completion',
+          LData.ModelName,
+          LData.Created,
+          [
+            TCompletionChoice.Create(
+              FTokenization.Decode([LToken]),
+              0,
+              LData.CompletionLogprobs)
+          ]);
+
+      ACallback(
+        LCompletionResponse,
+        LContinue);
+
+      if not LContinue then
+        Exit;
+    end;
+
+    LCompletionResponse :=
+      TCreateCompletionResponse.Create(
         LData.CompletionId,
         'text_completion',
         LData.ModelName,
         LData.Created,
         [
           TCompletionChoice.Create(
-            FTokenization.Decode([LToken]),
+            String.Empty,
             0,
-            LData.CompletionLogprobs)
-        ]
-      );
+            Default(TCompletionLogprobs),
+            LData.FinishReason)
+        ]);
 
-      ACallback(LCompletionResponse, LContinue);
-      if not LContinue then
-        Exit;
-    end;
+    ACallback(
+      LCompletionResponse,
+      LContinue);
 
-    LCompletionResponse := TCreateCompletionResponse.Create(
-      LData.CompletionId,
-      'text_completion',
-      LData.ModelName,
-      LData.Created,
-      [
-        TCompletionChoice.Create(
-          String.Empty,
-          0,
-          Default(TCompletionLogprobs),
-          LData.FinishReason)
-      ]
-    );
-
-    ACallback(LCompletionResponse, LContinue);
     if not LContinue then
       Exit;
 
@@ -492,279 +619,403 @@ begin
   if Assigned(FCache) then
     SaveCache(LData);
 
-  LTextStr := TEncoding.UTF8.GetString(LText);
+  LTextStr :=
+    TEncoding.UTF8.GetString(LText);
 
   if ASettings.Echo then
-    LTextStr := FTokenization.Decode(APrompt) + LTextStr;
+    LTextStr :=
+      FTokenization.Decode(APrompt) +
+      LTextStr;
 
-  if (FModel.TokenSuffix() < 0) and not ASettings.Suffix.IsEmpty() then
-    LTextStr := LTextStr + ASettings.Suffix;
+  if (FModel.TokenSuffix() < 0) and
+     not ASettings.Suffix.IsEmpty() then
+    LTextStr :=
+      LTextStr +
+      ASettings.Suffix;
 
   if ASettings.Logprobs > 0 then
-    LData.CompletionLogprobs := ProcessLogprob(
-      LData, ASettings, APrompt);
+    LData.CompletionLogprobs :=
+      ProcessLogprob(
+        LData,
+        ASettings,
+        APrompt);
 
-  LCompletionResponse := TCreateCompletionResponse.Create(
-    LData.CompletionId,
-    'text_completion',
-    LData.ModelName,
-    LData.Created,
-    [
-      TCompletionChoice.Create(
-        LTextStr,
-        0,
-        LData.CompletionLogprobs,
-        LData.FinishReason)
-    ],
-    TCompletionUsage.Create(
-      Length(LData.PromptTokens),
-      Length(LData.CompletionTokens),
-      Length(LData.PromptTokens) + Length(LData.CompletionTokens)
-    )
-  );
+  LCompletionResponse :=
+    TCreateCompletionResponse.Create(
+      LData.CompletionId,
+      'text_completion',
+      LData.ModelName,
+      LData.Created,
+      [
+        TCompletionChoice.Create(
+          LTextStr,
+          0,
+          LData.CompletionLogprobs,
+          LData.FinishReason)
+      ],
+      TCompletionUsage.Create(
+        Length(LData.PromptTokens),
+        Length(LData.CompletionTokens),
+        Length(LData.PromptTokens) +
+        Length(LData.CompletionTokens)));
 
-  ACallback(LCompletionResponse, LContinue);
+  ACallback(
+    LCompletionResponse,
+    LContinue);
 end;
 
-function TLlamaCompletion.DoGenerate([ref] AData: TCompletionData;
-  const ASettings: TLlamaCompletionSettings; const APrompt: TArray<integer>;
-  var AText: TBytes; const AToken: TLlamaToken; const AStream: boolean;
-  const ACallback: TCompletionCallback): boolean;
+function TLlamaCompletion.DoGenerate(
+  [ref] AData: TCompletionData;
+  const ASettings: TLlamaCompletionSettings;
+  const APrompt: TArray<Integer>;
+  var AText: TBytes;
+  const AToken: TLlamaToken;
+  const AStream: Boolean;
+  const ACallback: TCompletionCallback): Boolean;
 var
-  I: integer;
+  I: Integer;
   LAllText: TBytes;
-  LRemainingTokens: TArray<integer>;
+  LRemainingTokens: TArray<Integer>;
   LRemainingText: TBytes;
   LRemainingLenght: Integer;
   LFirstStopPosition: Integer;
   LStopSequence: TBytes;
   LRemainingLength: Integer;
-  LToken: integer;
-  LDecodeSuccess: boolean;
+  LToken: Integer;
+  LDecodeSuccess: Boolean;
   LBS: TBytes;
   LTS: string;
   LCompletionResponse: TCreateCompletionResponse;
-  LContinue: boolean;
+  LContinue: Boolean;
 begin
-  Result := true;
-  LContinue := true;
+  Result := True;
+  LContinue := True;
 
-  if TLlamaApi.Instance.llama_token_is_eog(FModel.Model, AToken) then
+  if TLlamaApi.Instance.llama_token_is_eog(
+    FModel.Model,
+    AToken) then
   begin
-    AText := FTokenization.Detokenize(
-      AData.CompletionTokens,
-      AData.PromptTokens);
+    AText :=
+      FTokenization.Detokenize(
+        AData.CompletionTokens,
+        AData.PromptTokens);
+
     AData.FinishReason := 'stop';
-    Exit(false);
+
+    Exit(False);
   end;
 
-  AData.CompletionTokens := AData.CompletionTokens + [AToken];
+  AData.CompletionTokens :=
+    AData.CompletionTokens + [AToken];
 
-  LAllText := FTokenization.Detokenize(
-    AData.CompletionTokens, AData.PromptTokens);
+  LAllText :=
+    FTokenization.Detokenize(
+      AData.CompletionTokens,
+      AData.PromptTokens);
 
-  if not CheckCompleteBytes(LAllText, AData.MultibyteFix) then
-    Exit(true);
+  if not CheckCompleteBytes(
+    LAllText,
+    AData.MultibyteFix) then
+    Exit(True);
 
-  if not ProcessAnyStopGenerate(AData, LAllText, AText) then
-    Exit(false);
+  if not ProcessAnyStopGenerate(
+    AData,
+    LAllText,
+    AText) then
+    Exit(False);
 
   if AStream then
   begin
-    LRemainingTokens := TArrayHelper.Slice<integer>(
-      AData.CompletionTokens, AData.ReturnedTokens);
-    LRemainingText := FTokenization.Detokenize(
-      LRemainingTokens,
-      AData.PromptTokens + TArrayHelper.Slice<integer>(
-          AData.CompletionTokens, Low(AData.CompletionTokens), AData.ReturnedTokens));
-    LRemainingLenght := Length(LRemainingText);
+    LRemainingTokens :=
+      TArrayHelper.Slice<Integer>(
+        AData.CompletionTokens,
+        AData.ReturnedTokens);
 
-    // We want to avoid yielding any characters from
-    // the generated text if they are part of a stop
-    // sequence.
+    LRemainingText :=
+      FTokenization.Detokenize(
+        LRemainingTokens,
+        AData.PromptTokens +
+        TArrayHelper.Slice<Integer>(
+          AData.CompletionTokens,
+          Low(AData.CompletionTokens),
+          AData.ReturnedTokens));
+
+    LRemainingLenght :=
+      Length(LRemainingText);
+
     LFirstStopPosition := 0;
+
     for LStopSequence in AData.StopSequences do
     begin
-      LRemainingLength := Length(LRemainingText);
+      LRemainingLength :=
+        Length(LRemainingText);
 
-      for I := Min(Length(LStopSequence), LRemainingLength) downto 1 do
-        if EndsWithBytes(LRemainingText, TArrayHelper.Slice<byte>(LStopSequence, Low(LStopSequence), I)) then
+      for I :=
+        Min(
+          Length(LStopSequence),
+          LRemainingLength)
+        downto 1 do
+      begin
+        if EndsWithBytes(
+          LRemainingText,
+          TArrayHelper.Slice<Byte>(
+            LStopSequence,
+            Low(LStopSequence),
+            I)) then
         begin
-          if i > LFirstStopPosition then
-            LFirstStopPosition := i;
+          if I > LFirstStopPosition then
+            LFirstStopPosition := I;
 
           Break;
         end;
+      end;
     end;
 
     AData.TokenEndPosition := 0;
 
     if ASettings.Logprobs > 0 then
     begin
-      // not sure how to handle this branch when dealing
-      // with CJK output, so keep it unchanged
       for LToken in LRemainingTokens do
       begin
         if LToken = FModel.TokenBOS() then
           Continue;
 
-        AData.TokenEndPosition := AData.TokenEndPosition
-        + Length(FTokenization.Detokenize(
-          [LToken],
-          AData.PromptTokens
-        + TArrayHelper.Slice<integer>(
-            AData.CompletionTokens,
-            Low(AData.CompletionTokens),
-            AData.ReturnedTokens)));
+        AData.TokenEndPosition :=
+          AData.TokenEndPosition +
+          Length(
+            FTokenization.Detokenize(
+              [LToken],
+              AData.PromptTokens +
+              TArrayHelper.Slice<Integer>(
+                AData.CompletionTokens,
+                Low(AData.CompletionTokens),
+                AData.ReturnedTokens)));
 
-        if AData.TokenEndPosition > (LRemainingLenght - LFirstStopPosition) then
+        if AData.TokenEndPosition >
+           (LRemainingLenght -
+            LFirstStopPosition) then
           Break;
 
-        AData.CompletionLogprobs := ProcessGenerateStreamLogprob(
-          AData, ASettings, LToken, APrompt);
+        AData.CompletionLogprobs :=
+          ProcessGenerateStreamLogprob(
+            AData,
+            ASettings,
+            LToken,
+            APrompt);
 
-        LCompletionResponse := TCreateCompletionResponse.Create(
-          AData.CompletionId,
-          'text_completion',
-          AData.ModelName,
-          AData.Created,
-          [
-            TCompletionChoice.Create(
-              FTokenization.Decode(
-                [AToken],
-                AData.PromptTokens
-              + TArrayHelper.Slice<integer>(
-                  AData.CompletionTokens,
-                  Low(AData.CompletionTokens),
-                  AData.ReturnedTokens)),
-              0,
-              AData.CompletionLogprobs)
-          ]
-        );
+        LCompletionResponse :=
+          TCreateCompletionResponse.Create(
+            AData.CompletionId,
+            'text_completion',
+            AData.ModelName,
+            AData.Created,
+            [
+              TCompletionChoice.Create(
+                FTokenization.Decode(
+                  [AToken],
+                  AData.PromptTokens +
+                  TArrayHelper.Slice<Integer>(
+                    AData.CompletionTokens,
+                    Low(AData.CompletionTokens),
+                    AData.ReturnedTokens)),
+                0,
+                AData.CompletionLogprobs)
+            ]);
 
-        ACallback(LCompletionResponse, LContinue);
+        ACallback(
+          LCompletionResponse,
+          LContinue);
 
         if not LContinue then
-          Exit(false);
+          Exit(False);
       end;
     end
     else
     begin
-
       while Length(LRemainingTokens) > 0 do
       begin
         LDecodeSuccess := False;
+
         for I := 1 to Length(LRemainingTokens) + 1 do
         begin
           try
-            LBS := FTokenization.Detokenize(
-              TArrayHelper.Slice<integer>(
-                LRemainingTokens,
-                Low(LRemainingTokens),
-                I),
-              AData.PromptTokens
-              + TArrayHelper.Slice<integer>(
+            LBS :=
+              FTokenization.Detokenize(
+                TArrayHelper.Slice<Integer>(
+                  LRemainingTokens,
+                  Low(LRemainingTokens),
+                  I),
+                AData.PromptTokens +
+                TArrayHelper.Slice<Integer>(
                   AData.CompletionTokens,
                   Low(AData.CompletionTokens),
                   AData.ReturnedTokens));
 
-            LTS := TEncoding.UTF8.GetString(LBS);
+            LTS :=
+              TEncoding.UTF8.GetString(LBS);
+
             LDecodeSuccess := True;
             Break;
           except
             on E: EEncodingError do
+            begin
+            end;
           end;
         end;
 
         if not LDecodeSuccess then
           Break;
 
-        AData.TokenEndPosition := AData.TokenEndPosition + Length(LBS);
-        if AData.TokenEndPosition > (LRemainingLenght - LFirstStopPosition) then
+        AData.TokenEndPosition :=
+          AData.TokenEndPosition +
+          Length(LBS);
+
+        if AData.TokenEndPosition >
+           (LRemainingLenght -
+            LFirstStopPosition) then
           Break;
 
-        LRemainingTokens := TArrayHelper.Slice<integer>(LRemainingTokens, I - 1);
-        AData.ReturnedTokens := AData.ReturnedTokens + I;
+        LRemainingTokens :=
+          TArrayHelper.Slice<Integer>(
+            LRemainingTokens,
+            I - 1);
 
-        LCompletionResponse := TCreateCompletionResponse.Create(
-          AData.CompletionId,
-          'text_completion',
-          AData.ModelName,
-          AData.Created,
-          [
-            TCompletionChoice.Create(LTS, 0)
-          ]
-        );
+        AData.ReturnedTokens :=
+          AData.ReturnedTokens + I;
 
-        ACallback(LCompletionResponse, LContinue);
+        LCompletionResponse :=
+          TCreateCompletionResponse.Create(
+            AData.CompletionId,
+            'text_completion',
+            AData.ModelName,
+            AData.Created,
+            [
+              TCompletionChoice.Create(
+                LTS,
+                0)
+            ]);
+
+        ACallback(
+          LCompletionResponse,
+          LContinue);
 
         if not LContinue then
-          Exit(false);
+          Exit(False);
       end;
     end;
   end;
 
-  if Length(AData.CompletionTokens) >= ASettings.MaxTokens then
+  if Length(AData.CompletionTokens) >=
+     ASettings.MaxTokens then
   begin
-    AText := FTokenization.Detokenize(
-      AData.CompletionTokens, AData.PromptTokens);
+    AText :=
+      FTokenization.Detokenize(
+        AData.CompletionTokens,
+        AData.PromptTokens);
+
     AData.FinishReason := 'length';
-    Result := false;
+    Result := False;
   end;
 end;
 
-function TLlamaCompletion.CreateCompletion(const APrompt: string;
+function TLlamaCompletion.CreateCompletion(
+  const APrompt: string;
   ASettings: TLlamaCompletionSettings;
   const AStoppingCriteria: IStoppingCriteriaList;
   const ALogitsProcessor: ILogitsProcessorList;
   const AGrammar: ILlamaGrammar): TCreateCompletionResponse;
 var
   LResult: TCreateCompletionResponse;
+  LCallback: TCompletionCallback;
 begin
-  InternalCreateCompletion(APrompt, false, ASettings,
-    procedure(const AResponse: TCreateCompletionResponse; var AContinue: boolean)
+  LResult := Default(TCreateCompletionResponse);
+
+  LCallback :=
+    procedure(
+      const AResponse: TCreateCompletionResponse;
+      var AContinue: Boolean)
     begin
       LResult := AResponse;
-    end, AStoppingCriteria, ALogitsProcessor, AGrammar);
+    end;
+
+  InternalCreateCompletion(
+    APrompt,
+    False,
+    ASettings,
+    LCallback,
+    AStoppingCriteria,
+    ALogitsProcessor,
+    AGrammar);
 
   Result := LResult;
 end;
 
-procedure TLlamaCompletion.CreateCompletion(const APrompt: string;
-  ASettings: TLlamaCompletionSettings; const ACallback: TCompletionCallback;
+procedure TLlamaCompletion.CreateCompletion(
+  const APrompt: string;
+  ASettings: TLlamaCompletionSettings;
+  const ACallback: TCompletionCallback;
   const AStoppingCriteria: IStoppingCriteriaList;
-  const ALogitsProcessor: ILogitsProcessorList; const AGrammar: ILlamaGrammar);
+  const ALogitsProcessor: ILogitsProcessorList;
+  const AGrammar: ILlamaGrammar);
 begin
   InternalCreateCompletion(
-    APrompt, true, ASettings, ACallback, AStoppingCriteria,
-    ALogitsProcessor, AGrammar);
+    APrompt,
+    True,
+    ASettings,
+    ACallback,
+    AStoppingCriteria,
+    ALogitsProcessor,
+    AGrammar);
 end;
 
-function TLlamaCompletion.CreateCompletion(const APrompt: TArray<integer>;
+function TLlamaCompletion.CreateCompletion(
+  const APrompt: TArray<Integer>;
   ASettings: TLlamaCompletionSettings;
   const AStoppingCriteria: IStoppingCriteriaList;
   const ALogitsProcessor: ILogitsProcessorList;
   const AGrammar: ILlamaGrammar): TCreateCompletionResponse;
 var
   LResult: TCreateCompletionResponse;
+  LCallback: TCompletionCallback;
 begin
-  InternalCreateCompletion(APrompt, false, ASettings,
-    procedure(const AResponse: TCreateCompletionResponse; var AContinue: boolean)
+  LResult := Default(TCreateCompletionResponse);
+
+  LCallback :=
+    procedure(
+      const AResponse: TCreateCompletionResponse;
+      var AContinue: Boolean)
     begin
       LResult := AResponse;
-    end, AStoppingCriteria, ALogitsProcessor, AGrammar);
+    end;
+
+  InternalCreateCompletion(
+    APrompt,
+    False,
+    ASettings,
+    LCallback,
+    AStoppingCriteria,
+    ALogitsProcessor,
+    AGrammar);
 
   Result := LResult;
 end;
 
-procedure TLlamaCompletion.CreateCompletion(const APrompt: TArray<integer>;
-  ASettings: TLlamaCompletionSettings; const ACallback: TCompletionCallback;
+procedure TLlamaCompletion.CreateCompletion(
+  const APrompt: TArray<Integer>;
+  ASettings: TLlamaCompletionSettings;
+  const ACallback: TCompletionCallback;
   const AStoppingCriteria: IStoppingCriteriaList;
-  const ALogitsProcessor: ILogitsProcessorList; const AGrammar: ILlamaGrammar);
+  const ALogitsProcessor: ILogitsProcessorList;
+  const AGrammar: ILlamaGrammar);
 begin
   InternalCreateCompletion(
-    APrompt, true, ASettings, ACallback, AStoppingCriteria,
-    ALogitsProcessor, AGrammar);
+    APrompt,
+    True,
+    ASettings,
+    ACallback,
+    AStoppingCriteria,
+    ALogitsProcessor,
+    AGrammar);
 end;
 
 procedure TLlamaCompletion.CheckStopCriteria(
@@ -772,61 +1023,89 @@ procedure TLlamaCompletion.CheckStopCriteria(
   const AStoppingCriteria: IStoppingCriteriaList;
   var AText: TBytes);
 var
-  LInputIds: TArray<integer>;
-  LScores: TArray<TArray<single>>;
+  LInputIds: TArray<Integer>;
+  LScores: TArray<TArray<Single>>;
 begin
-  LInputIds := TInputIdHelper.InputId(FLlama.InputIds, FLlama.NumberOfTokens);
-  LScores := TScoresHelper.Scores(FLlama.Scores, FLlama.NumberOfTokens);
+  LInputIds :=
+    TInputIdHelper.InputId(
+      FLlama.InputIds,
+      FLlama.NumberOfTokens);
 
-  if AStoppingCriteria.Execute(LInputIds, LScores[High(LScores)]) then
+  LScores :=
+    TScoresHelper.Scores(
+      FLlama.Scores,
+      FLlama.NumberOfTokens);
+
+  if AStoppingCriteria.Execute(
+    LInputIds,
+    LScores[High(LScores)]) then
   begin
-    AText := FTokenization.Detokenize(
-      AData.CompletionTokens, AData.PromptTokens);
+    AText :=
+      FTokenization.Detokenize(
+        AData.CompletionTokens,
+        AData.PromptTokens);
+
     AData.FinishReason := 'stop';
   end;
 end;
 
-procedure TLlamaCompletion.SaveCache([ref] AData: TCompletionData);
+procedure TLlamaCompletion.SaveCache(
+  [ref] AData: TCompletionData);
 var
   LCacheItem: TLlamaState;
 begin
   LCacheItem := FLlama.SaveState;
+
   try
-    FCache[AData.PromptTokens + AData.CompletionTokens] := LCacheItem;
+    FCache[
+      AData.PromptTokens +
+      AData.CompletionTokens] :=
+      LCacheItem;
   finally
     LCacheItem.Free;
   end;
 end;
 
-procedure TLlamaCompletion.LoadCache([ref] AData: TCompletionData);
+procedure TLlamaCompletion.LoadCache(
+  [ref] AData: TCompletionData);
 var
   LCachePrefixLen: Integer;
   LEvalPrefixLen: Integer;
   LCacheItem: TLlamaState;
-  LInputIds: TArray<integer>;
+  LInputIds: TArray<Integer>;
 begin
   try
-    LCacheItem := FCache[AData.PromptTokens];
+    LCacheItem :=
+      FCache[AData.PromptTokens];
+
     try
-      LCachePrefixLen := FCache.LongestTokenPrefix(LCacheItem.InputIds, AData.PromptTokens);
-      LInputIds := TInputIdHelper.InputId(FLlama.InputIds, FLlama.NumberOfTokens);
-      LEvalPrefixLen := FCache.LongestTokenPrefix(LInputIds, AData.PromptTokens);
-      if (LCachePrefixLen > LEvalPrefixLen) then
-      begin
+      LCachePrefixLen :=
+        FCache.LongestTokenPrefix(
+          LCacheItem.InputIds,
+          AData.PromptTokens);
+
+      LInputIds :=
+        TInputIdHelper.InputId(
+          FLlama.InputIds,
+          FLlama.NumberOfTokens);
+
+      LEvalPrefixLen :=
+        FCache.LongestTokenPrefix(
+          LInputIds,
+          AData.PromptTokens);
+
+      if LCachePrefixLen >
+         LEvalPrefixLen then
         FLlama.LoadState(LCacheItem);
-      end;
-      //if FSettings.Verbose then
-      //print("Llama._create_completion: cache hit", file=sys.stderr);
     finally
       LCacheItem.Free;
     end;
   except
   end;
-  //if self.verbose:
-  //  print("Llama._create_completion: cache miss", file=sys.stderr)
 end;
 
-procedure TLlamaCompletion.SetupLogitsProcessor([ref] AData: TCompletionData;
+procedure TLlamaCompletion.SetupLogitsProcessor(
+  [ref] AData: TCompletionData;
   const ASettings: TLlamaCompletionSettings;
   var ALogitsProcessor: ILogitsProcessorList);
 var
@@ -835,126 +1114,204 @@ var
 begin
   LLogitBiasMap := ASettings.LogitBias;
 
-  LLogitBiasProcessor := procedure(const AInputIds: TArray<Integer>;
-    [ref] const AScores: TArray<Single>)
-  var
-    LLogitBias: TPair<integer, single>;
-  begin
-    for LLogitBias in LLogitBiasMap do
-      AScores[LLogitBias.Key] := LLogitBias.Value + AScores[LLogitBias.Key];
-  end;
+  LLogitBiasProcessor :=
+    procedure(
+      const AInputIds: TArray<Integer>;
+      [ref] const AScores: TArray<Single>)
+    var
+      LLogitBias: TPair<Integer, Single>;
+    begin
+      for LLogitBias in LLogitBiasMap do
+        AScores[LLogitBias.Key] :=
+          LLogitBias.Value +
+          AScores[LLogitBias.Key];
+    end;
 
   if not Assigned(ALogitsProcessor) then
-    ALogitsProcessor := TDefaultLogitsScoreList.Create();
+    ALogitsProcessor :=
+      TDefaultLogitsScoreList.Create();
 
-  ALogitsProcessor.Add(LLogitBiasProcessor);
+  ALogitsProcessor.Add(
+    LLogitBiasProcessor);
 end;
 
-function TLlamaCompletion.ContainsBytes(const AHayStack,
-  ANeedle: TBytes): boolean;
+function TLlamaCompletion.ContainsBytes(
+  const AHayStack,
+  ANeedle: TBytes): Boolean;
 var
-  I: integer;
+  I: Integer;
 begin
-  if not Assigned(ANeedle) or (Length(AHayStack) < Length(ANeedle)) then
-    Exit(false);
+  if not Assigned(ANeedle) or
+     (Length(AHayStack) <
+      Length(ANeedle)) then
+    Exit(False);
 
-  for I := 0 to Length(AHayStack) - Length(ANeedle) do
-      if CompareMem(@AHayStack[I], @ANeedle[0], Length(ANeedle)) then
-        Exit(true);
-    
-  Result := false;
+  for I := 0 to
+    Length(AHayStack) -
+    Length(ANeedle) do
+  begin
+    if CompareMem(
+      @AHayStack[I],
+      @ANeedle[0],
+      Length(ANeedle)) then
+      Exit(True);
+  end;
+
+  Result := False;
 end;
 
-function TLlamaCompletion.EndsWithBytes(const AHayStack,
-  ANeedle: TBytes): boolean;
+function TLlamaCompletion.EndsWithBytes(
+  const AHayStack,
+  ANeedle: TBytes): Boolean;
 begin
-  if not Assigned(ANeedle) or (Length(AHayStack) < Length(ANeedle)) then
-    Exit(false);
+  if not Assigned(ANeedle) or
+     (Length(AHayStack) <
+      Length(ANeedle)) then
+    Exit(False);
 
-  if CompareMem(@AHayStack[Length(AHayStack) - Length(ANeedle)], @ANeedle[0], Length(ANeedle)) then
-    Exit(true);
-    
-  Result := false;
+  if CompareMem(
+    @AHayStack[
+      Length(AHayStack) -
+      Length(ANeedle)],
+    @ANeedle[0],
+    Length(ANeedle)) then
+    Exit(True);
+
+  Result := False;
 end;
 
-function TLlamaCompletion.CopyBytes(const ASource, ANeedle: TBytes): TBytes;
+function TLlamaCompletion.CopyBytes(
+  const ASource,
+  ANeedle: TBytes): TBytes;
 var
-  I: integer;
+  I: Integer;
 begin
-  if not Assigned(ANeedle) or (Length(ASource) < Length(ANeedle)) then
+  if not Assigned(ANeedle) or
+     (Length(ASource) <
+      Length(ANeedle)) then
     Exit(nil);
 
-  for I := 0 to Length(ASource) - Length(ANeedle) do
-    if CompareMem(@ASource[I], @ANeedle[0], Length(ANeedle)) then
+  for I := 0 to
+    Length(ASource) -
+    Length(ANeedle) do
+  begin
+    if CompareMem(
+      @ASource[I],
+      @ANeedle[0],
+      Length(ANeedle)) then
     begin
-      Setlength(Result, Succ(I));
-      Move(ASource[0], Result[0], Succ(I));
+      SetLength(Result, Succ(I));
+
+      Move(
+        ASource[0],
+        Result[0],
+        Succ(I));
+
       Exit(Result);
     end;
+  end;
 
   Result := nil;
 end;
 
-function TLlamaCompletion.IndexOfBytes(const ASource, ANeedle: TBytes): integer;
+function TLlamaCompletion.IndexOfBytes(
+  const ASource,
+  ANeedle: TBytes): Integer;
 begin
   if not Assigned(ANeedle) then
     Exit(0);
 
-  if Length(ASource) < Length(ANeedle) then
+  if Length(ASource) <
+     Length(ANeedle) then
     Exit(-1);
 
-  for Result := 0 to Length(ASource) - Length(ANeedle) do
-    if CompareMem(@ASource[Result], @ANeedle[0], Length(ANeedle)) then
+  for Result := 0 to
+    Length(ASource) -
+    Length(ANeedle) do
+  begin
+    if CompareMem(
+      @ASource[Result],
+      @ANeedle[0],
+      Length(ANeedle)) then
       Exit;
+  end;
 
   Result := -1;
 end;
 
-function TLlamaCompletion.ProcessAnyStopGenerate([ref] LData: TCompletionData;
-  const AAllText: TBytes; var AText: TBytes): boolean;
+function TLlamaCompletion.ProcessAnyStopGenerate(
+  [ref] LData: TCompletionData;
+  const AAllText: TBytes;
+  var AText: TBytes): Boolean;
 var
   I: Integer;
   LAnyStop: TList<TBytes>;
 begin
-  Result := true;
+  Result := True;
 
   LAnyStop := TList<TBytes>.Create;
+
   try
-    for I := 0 to Length(LData.StopSequences) - 1 do
-      if ContainsBytes(AAllText, LData.StopSequences[I]) then
-        LAnyStop.Add(LData.StopSequences[i]);
+    for I := 0 to
+      Length(LData.StopSequences) - 1 do
+    begin
+      if ContainsBytes(
+        AAllText,
+        LData.StopSequences[I]) then
+        LAnyStop.Add(
+          LData.StopSequences[I]);
+    end;
 
     if LAnyStop.Count > 0 then
     begin
-      AText := CopyBytes(AAllText, LAnyStop[0]);
+      AText :=
+        CopyBytes(
+          AAllText,
+          LAnyStop[0]);
+
       LData.FinishReason := 'stop';
-      Result := false;
+      Result := False;
     end;
   finally
-    LAnyStop.Free();
+    LAnyStop.Free;
   end;
 end;
 
 function TLlamaCompletion.ProcessAnyStopStream(
-  const AStopSequences: TArray<TBytes>; const ARemainingText: TBytes): integer;
+  const AStopSequences: TArray<TBytes>;
+  const ARemainingText: TBytes): Integer;
 var
   I: Integer;
   LAnyStop: TList<TBytes>;
-  LStopIndex: integer;
+  LStopIndex: Integer;
 begin
   LAnyStop := TList<TBytes>.Create;
+
   try
-    for I := Low(AStopSequences) to High(AStopSequences) do
-      if ContainsBytes(AStopSequences[I], ARemainingText) then
-        LAnyStop.Add(AStopSequences[I]);
+    for I := Low(AStopSequences) to
+             High(AStopSequences) do
+    begin
+      if ContainsBytes(
+        AStopSequences[I],
+        ARemainingText) then
+        LAnyStop.Add(
+          AStopSequences[I]);
+    end;
 
     if LAnyStop.Count > 0 then
     begin
       Result := Length(ARemainingText);
-      for I := 0 to LAnyStop.Count - 1 do
+
+      for I := 0 to
+        LAnyStop.Count - 1 do
       begin
-        LStopIndex := IndexOfBytes(ARemainingText, LAnyStop[I]);
-        if (LStopIndex > 0) and (LStopIndex < Result) then
+        LStopIndex :=
+          IndexOfBytes(
+            ARemainingText,
+            LAnyStop[I]);
+
+        if (LStopIndex > 0) and
+           (LStopIndex < Result) then
           Result := LStopIndex;
       end;
     end
@@ -966,196 +1323,297 @@ begin
 end;
 
 function TLlamaCompletion.CheckCompleteBytes(
-  const AAllText: TBytes; var AMultibyteFix: integer): boolean;
+  const AAllText: TBytes;
+  var AMultibyteFix: Integer): Boolean;
 var
-  I: integer;
-  K: integer;
-  LChar: byte;
-  LNum: integer;
-  LPattern: integer;
+  I: Integer;
+  K: Integer;
+  LChar: Byte;
+  LNum: Integer;
+  LPattern: Integer;
+  LAllText: TBytes;
 begin
-  Result := true;
+  Result := True;
 
-  var LAllText := TArrayHelper.Slice<byte>(AAllText, -3);   
+  { Delphi 10.2 does not support inline local
+    variable declarations such as:
+      var LAllText := ...
+  }
+  LAllText :=
+    TArrayHelper.Slice<Byte>(
+      AAllText,
+      -3);
 
-  for I := Low(LAllText) to High(LAllText) do
+  for I := Low(LAllText) to
+           High(LAllText) do
   begin
     if I < 0 then
       Continue;
 
-    LChar := Ord(LAllText[I]);
+    LChar := LAllText[I];
     K := 3 - I;
 
     for LNum := 2 to 4 do
     begin
       case LNum of
-        2: LPattern := 192;
-        3: LPattern := 224;
-        4: LPattern := 240;
-        else
-          Continue;
+        2:
+          LPattern := 192;
+
+        3:
+          LPattern := 224;
+
+        4:
+          LPattern := 240;
+      else
+        Continue;
       end;
 
-      if (LNum > k) and ((LPattern and LChar) = LPattern) then
-        AMultibyteFix := LNum - k;
+      if (LNum > K) and
+         ((LPattern and LChar) =
+          LPattern) then
+        AMultibyteFix :=
+          LNum - K;
     end;
   end;
 
-  // Stop incomplete bytes from passing
   if AMultibyteFix > 0 then
   begin
     Dec(AMultibyteFix);
-    Result := false;
+    Result := False;
   end;
 end;
 
-function TLlamaCompletion.ProcessStreamLogprob([ref] AData: TCompletionData;
-  const ASettings: TLlamaCompletionSettings; const AToken: Integer;
-  const APrompt: TArray<integer>): TCompletionLogprobs;
-var
-  I: integer;
-  LTopLogprob: TDictionary<string, Single>;
-  LSortedLogprobs: TArray<TPair<Single, Integer>>;
-  LTokenOffset: Integer;
-  LTextOffset: Integer;
-  LTokenStr: string;
-  LLogits: TArray<Single>;
-  LCurrentLogprobs: TArray<Single>;
-begin
-  LTokenStr := FTokenization.Decode([AToken]);
-  LTextOffset := Length(APrompt)
-  + Length(
-    FTokenization.Detokenize(
-      TArrayHelper.Slice<integer>(
-        AData.CompletionTokens,
-        Low(AData.CompletionTokens),
-        AData.ReturnedTokens),
-      AData.PromptTokens + TArrayHelper.Slice<integer>(
-        AData.CompletionTokens,
-        Low(AData.CompletionTokens),
-        AData.ReturnedTokens
-      )
-    )
-  );
-  LTokenOffset := Length(AData.PromptTokens) + AData.ReturnedTokens - 1;
-  LLogits := TScoresHelper.Scores(FLlama.Scores, FLlama.NumberOfTokens)[LTokenOffset];
-  LCurrentLogprobs := TLogits.ToLogprobs([LLogits])[0];
-
-  // Sort logprobs in descending order
-  SetLength(LSortedLogprobs, Length(LCurrentLogprobs));
-  for i := Low(LCurrentLogprobs) to High(LCurrentLogprobs) do
-    LSortedLogprobs[i] := TPair<single, integer>.Create(LCurrentLogprobs[i], i);
-
-  // Sort by logprobs
-  TArray.Sort<TPair<single, integer>>(LSortedLogprobs, TComparer<TPair<single, integer>>.Construct(
-    function(const Left, Right: TPair<single, integer>): Integer
-    begin
-      Result := CompareValue(Right.Value, Left.Value);
-    end));
-
-  LTopLogprob := TDictionary<string, Single>.Create;
-  try
-    for I := 0 to Min(High(LSortedLogprobs), ASettings.Logprobs - 1) do
-      LTopLogprob.AddOrSetValue(
-        FTokenization.Decode([LSortedLogprobs[I].Value]),
-        LSortedLogprobs[I].Key);
-
-    LTopLogprob.AddOrSetValue(LTokenStr, LCurrentLogprobs[AToken]);
-
-    Result := TCompletionLogprobs.Create(
-      [LTextOffset],
-      [LCurrentLogprobs[AToken]],
-      [FTokenization.Decode([AToken])],
-      [LTopLogprob.ToArray]);
-
-    Inc(AData.ReturnedTokens);
-  finally
-    LTopLogprob.Free;
-  end;
-end;
-
-function TLlamaCompletion.ProcessGenerateStreamLogprob([ref] AData: TCompletionData;
-  const ASettings: TLlamaCompletionSettings; const AToken: Integer;
-  const APrompt: TArray<integer>): TCompletionLogprobs;
-var
-  I: integer;
-  LTopLogprob: TDictionary<string, Single>;
-  LSortedLogprobs: TArray<TPair<Single, Integer>>;
-  LTokenOffset: Integer;
-  LTextOffset: Integer;
-  LTokenStr: string;
-  LLogits: TArray<Single>;
-  LCurrentLogprobs: TArray<Single>;
-begin
-  LTokenStr := FTokenization.Decode(
-    [AToken],
-    AData.PromptTokens
-  + TArrayHelper.Slice<integer>(
-      AData.CompletionTokens,
-      Low(AData.CompletionTokens),
-      AData.ReturnedTokens));
-
-  LTextOffset := Length(APrompt)
-  + Length(FTokenization.Detokenize(
-    TArrayHelper.Slice<integer>(
-      AData.CompletionTokens,
-      Low(AData.CompletionTokens),
-      AData.ReturnedTokens),
-    AData.PromptTokens
-  + TArrayHelper.Slice<integer>(
-    AData.CompletionTokens,
-    Low(AData.CompletionTokens),
-    AData.ReturnedTokens)));
-
-  LTokenOffset := Length(AData.PromptTokens) + AData.ReturnedTokens;
-  LLogits := TScoresHelper.Scores(FLlama.Scores, FLlama.NumberOfTokens)[LTokenOffset - 1];
-  LCurrentLogprobs := TLogits.ToLogprobs([LLogits])[0];
-
-  // Sort the logprobs in descending order, creating pairs (logprob, index)
-  SetLength(LSortedLogprobs, Length(LCurrentLogprobs));
-  for i := Low(LCurrentLogprobs) to High(LCurrentLogprobs) do
-    LSortedLogprobs[i] := TPair<Single, Integer>.Create(LCurrentLogprobs[i], i);
-
-  // Sort the pairs by logprob in descending order
-  TArray.Sort<TPair<Single, Integer>>(LSortedLogprobs, TComparer<TPair<Single, Integer>>.Construct(
-    function(const Left, Right: TPair<Single, Integer>): Integer
-    begin
-      Result := CompareValue(Right.Value, Left.Value);
-    end));
-
-  LTopLogprob := TDictionary<string, Single>.Create;
-  try
-    for I := 0 to Min(High(LSortedLogprobs), ASettings.Logprobs - 1) do
-      LTopLogprob.AddOrSetValue(
-        FTokenization.Decode([LSortedLogprobs[I].Value]),
-        LSortedLogprobs[I].Key);
-
-    LTopLogprob.AddOrSetValue(LTokenStr, LCurrentLogprobs[AToken]);
-
-    Result := TCompletionLogprobs.Create(
-      [LTextOffset],
-      [LCurrentLogprobs[AToken]],
-      [FTokenization.Decode([AToken],
-      AData.PromptTokens
-    + TArrayHelper.Slice<integer>(
-        AData.CompletionTokens,
-        Low(AData.CompletionTokens),
-        AData.ReturnedTokens))],
-      [LTopLogprob.ToArray()]
-    );
-
-    Inc(AData.ReturnedTokens);
-  finally
-    LTopLogprob.Free;
-  end;
-end;
-
-function TLlamaCompletion.ProcessLogprob([ref] AData: TCompletionData;
+function TLlamaCompletion.ProcessStreamLogprob(
+  [ref] AData: TCompletionData;
   const ASettings: TLlamaCompletionSettings;
-  const APrompt: TArray<integer>): TCompletionLogprobs;
+  const AToken: Integer;
+  const APrompt: TArray<Integer>): TCompletionLogprobs;
 var
-  I: integer;
-  J: integer;
+  I: Integer;
+  LTopLogprob: TDictionary<string, Single>;
+  LSortedLogprobs: TArray<TPair<Single, Integer>>;
+  LTokenOffset: Integer;
+  LTextOffset: Integer;
+  LTokenStr: string;
+  LLogits: TArray<Single>;
+  LCurrentLogprobs: TArray<Single>;
+begin
+  LTokenStr :=
+    FTokenization.Decode([AToken]);
+
+  LTextOffset :=
+    Length(APrompt) +
+    Length(
+      FTokenization.Detokenize(
+        TArrayHelper.Slice<Integer>(
+          AData.CompletionTokens,
+          Low(AData.CompletionTokens),
+          AData.ReturnedTokens),
+        AData.PromptTokens +
+        TArrayHelper.Slice<Integer>(
+          AData.CompletionTokens,
+          Low(AData.CompletionTokens),
+          AData.ReturnedTokens)));
+
+  LTokenOffset :=
+    Length(AData.PromptTokens) +
+    AData.ReturnedTokens - 1;
+
+  LLogits :=
+    TScoresHelper.Scores(
+      FLlama.Scores,
+      FLlama.NumberOfTokens)
+      [LTokenOffset];
+
+  LCurrentLogprobs :=
+    TLogits.ToLogprobs(
+      [LLogits])[0];
+
+  SetLength(
+    LSortedLogprobs,
+    Length(LCurrentLogprobs));
+
+  for I :=
+    Low(LCurrentLogprobs) to
+    High(LCurrentLogprobs) do
+  begin
+    LSortedLogprobs[I] :=
+      TPair<Single, Integer>.Create(
+        LCurrentLogprobs[I],
+        I);
+  end;
+
+  TArray.Sort<TPair<Single, Integer>>(
+    LSortedLogprobs,
+    TComparer<TPair<Single, Integer>>.Construct(
+      function(
+        const Left,
+        Right: TPair<Single, Integer>): Integer
+      begin
+        Result :=
+          CompareValue(
+            Right.Value,
+            Left.Value);
+      end));
+
+  LTopLogprob :=
+    TDictionary<string, Single>.Create;
+
+  try
+    for I := 0 to
+      Min(
+        High(LSortedLogprobs),
+        ASettings.Logprobs - 1) do
+    begin
+      LTopLogprob.AddOrSetValue(
+        FTokenization.Decode(
+          [LSortedLogprobs[I].Value]),
+        LSortedLogprobs[I].Key);
+    end;
+
+    LTopLogprob.AddOrSetValue(
+      LTokenStr,
+      LCurrentLogprobs[AToken]);
+
+    Result :=
+      TCompletionLogprobs.Create(
+        [LTextOffset],
+        [LCurrentLogprobs[AToken]],
+        [FTokenization.Decode([AToken])],
+        [LTopLogprob.ToArray]);
+
+    Inc(AData.ReturnedTokens);
+  finally
+    LTopLogprob.Free;
+  end;
+end;
+
+function TLlamaCompletion.ProcessGenerateStreamLogprob(
+  [ref] AData: TCompletionData;
+  const ASettings: TLlamaCompletionSettings;
+  const AToken: Integer;
+  const APrompt: TArray<Integer>): TCompletionLogprobs;
+var
+  I: Integer;
+  LTopLogprob: TDictionary<string, Single>;
+  LSortedLogprobs: TArray<TPair<Single, Integer>>;
+  LTokenOffset: Integer;
+  LTextOffset: Integer;
+  LTokenStr: string;
+  LLogits: TArray<Single>;
+  LCurrentLogprobs: TArray<Single>;
+begin
+  LTokenStr :=
+    FTokenization.Decode(
+      [AToken],
+      AData.PromptTokens +
+      TArrayHelper.Slice<Integer>(
+        AData.CompletionTokens,
+        Low(AData.CompletionTokens),
+        AData.ReturnedTokens));
+
+  LTextOffset :=
+    Length(APrompt) +
+    Length(
+      FTokenization.Detokenize(
+        TArrayHelper.Slice<Integer>(
+          AData.CompletionTokens,
+          Low(AData.CompletionTokens),
+          AData.ReturnedTokens),
+        AData.PromptTokens +
+        TArrayHelper.Slice<Integer>(
+          AData.CompletionTokens,
+          Low(AData.CompletionTokens),
+          AData.ReturnedTokens)));
+
+  LTokenOffset :=
+    Length(AData.PromptTokens) +
+    AData.ReturnedTokens;
+
+  LLogits :=
+    TScoresHelper.Scores(
+      FLlama.Scores,
+      FLlama.NumberOfTokens)
+      [LTokenOffset - 1];
+
+  LCurrentLogprobs :=
+    TLogits.ToLogprobs(
+      [LLogits])[0];
+
+  SetLength(
+    LSortedLogprobs,
+    Length(LCurrentLogprobs));
+
+  for I :=
+    Low(LCurrentLogprobs) to
+    High(LCurrentLogprobs) do
+  begin
+    LSortedLogprobs[I] :=
+      TPair<Single, Integer>.Create(
+        LCurrentLogprobs[I],
+        I);
+  end;
+
+  TArray.Sort<TPair<Single, Integer>>(
+    LSortedLogprobs,
+    TComparer<TPair<Single, Integer>>.Construct(
+      function(
+        const Left,
+        Right: TPair<Single, Integer>): Integer
+      begin
+        Result :=
+          CompareValue(
+            Right.Value,
+            Left.Value);
+      end));
+
+  LTopLogprob :=
+    TDictionary<string, Single>.Create;
+
+  try
+    for I := 0 to
+      Min(
+        High(LSortedLogprobs),
+        ASettings.Logprobs - 1) do
+    begin
+      LTopLogprob.AddOrSetValue(
+        FTokenization.Decode(
+          [LSortedLogprobs[I].Value]),
+        LSortedLogprobs[I].Key);
+    end;
+
+    LTopLogprob.AddOrSetValue(
+      LTokenStr,
+      LCurrentLogprobs[AToken]);
+
+    Result :=
+      TCompletionLogprobs.Create(
+        [LTextOffset],
+        [LCurrentLogprobs[AToken]],
+        [
+          FTokenization.Decode(
+            [AToken],
+            AData.PromptTokens +
+            TArrayHelper.Slice<Integer>(
+              AData.CompletionTokens,
+              Low(AData.CompletionTokens),
+              AData.ReturnedTokens))
+        ],
+        [LTopLogprob.ToArray]);
+
+    Inc(AData.ReturnedTokens);
+  finally
+    LTopLogprob.Free;
+  end;
+end;
+
+function TLlamaCompletion.ProcessLogprob(
+  [ref] AData: TCompletionData;
+  const ASettings: TLlamaCompletionSettings;
+  const APrompt: TArray<Integer>): TCompletionLogprobs;
+var
+  I: Integer;
+  J: Integer;
   LToken: Integer;
   LTopLogprob: TDictionary<string, Single>;
   LLogprobsToken: TArray<Single>;
@@ -1185,34 +1643,62 @@ begin
   else
   begin
     LTextOffset := Length(APrompt);
-    LTokenOffset := Length(AData.PromptTokens) - 1;
+    LTokenOffset :=
+      Length(AData.PromptTokens) - 1;
   end;
 
   if ASettings.Echo then
   begin
-    // Remove leading BOS token if exists
-    if AData.PromptTokens[0] = FModel.TokenBOS() then
-      LAllTokens := TArrayHelper.Slice<integer>(AData.PromptTokens, Low(AData.PromptTokens) + 1)
+    if AData.PromptTokens[0] =
+       FModel.TokenBOS() then
+      LAllTokens :=
+        TArrayHelper.Slice<Integer>(
+          AData.PromptTokens,
+          Low(AData.PromptTokens) + 1)
     else
-      LAllTokens := TArrayHelper.Slice<integer>(AData.PromptTokens, Low(AData.PromptTokens));
+      LAllTokens :=
+        TArrayHelper.Slice<Integer>(
+          AData.PromptTokens,
+          Low(AData.PromptTokens));
 
-    LAllTokens := LAllTokens + AData.CompletionTokens;
+    LAllTokens :=
+      LAllTokens +
+      AData.CompletionTokens;
   end
   else
-    LAllTokens := AData.CompletionTokens;
+    LAllTokens :=
+      AData.CompletionTokens;
 
-  for I := Low(LAllTokens) to High(LAllTokens) do
-    LAllTokenStrs := LAllTokenStrs + [FTokenization.Decode(
-      [LAllTokens[I]],
-      TArrayHelper.Slice<integer>(LAllTokens, Low(LAllTokens), I)
-    )];
+  for I := Low(LAllTokens) to
+           High(LAllTokens) do
+  begin
+    LAllTokenStrs :=
+      LAllTokenStrs +
+      [
+        FTokenization.Decode(
+          [LAllTokens[I]],
+          TArrayHelper.Slice<Integer>(
+            LAllTokens,
+            Low(LAllTokens),
+            I))
+      ];
+  end;
 
-  LAllLogprobs := TArrayHelper.Slice<single>(
-    TLogits.ToLogprobs(TScoresHelper.Scores(FLlama.Scores, FLlama.NumberOfTokens)),
-    LTokenOffset, TInteger.Null, 1,
-    TInteger.Null, TInteger.Null, 1);
+  LAllLogprobs :=
+    TArrayHelper.Slice<Single>(
+      TLogits.ToLogprobs(
+        TScoresHelper.Scores(
+          FLlama.Scores,
+          FLlama.NumberOfTokens)),
+      LTokenOffset,
+      TInteger.Null,
+      1,
+      TInteger.Null,
+      TInteger.Null,
+      1);
 
-  for I := Low(LAllTokens) to High(LAllTokens) do
+  for I := Low(LAllTokens) to
+           High(LAllTokens) do
   begin
     LToken := LAllTokens[I];
     LTokenStr := LAllTokenStrs[I];
@@ -1221,57 +1707,96 @@ begin
     if LToken = FModel.TokenBOS() then
       Continue;
 
-    LTextOffsets := LTextOffsets + [
-      LTextOffset
-    + Length(FTokenization.Detokenize(
-        TArrayHelper.Slice<integer>(LAllTokens, Low(LAllTokens), I)))
-    ];
+    LTextOffsets :=
+      LTextOffsets +
+      [
+        LTextOffset +
+        Length(
+          FTokenization.Detokenize(
+            TArrayHelper.Slice<Integer>(
+              LAllTokens,
+              Low(LAllTokens),
+              I)))
+      ];
 
-    LTokens := LTokens + [LTokenStr];
+    LTokens :=
+      LTokens + [LTokenStr];
 
-    SetLength(LSortedLogprobs, Length(LLogprobsToken));
-    for J := 0 to High(LLogprobsToken) do
-      LSortedLogprobs[i] := TPair<Single, Integer>.Create(LLogprobsToken[J], J);
+    SetLength(
+      LSortedLogprobs,
+      Length(LLogprobsToken));
 
-    TArray.Sort<TPair<Single, Integer>>(LSortedLogprobs, TComparer<TPair<Single, Integer>>.Construct(
-      function(const Left, Right: TPair<Single, Integer>): Integer
-      begin
-        Result := CompareValue(Right.Value, Left.Value); // Sort in descending order
-      end));
+    for J := 0 to
+      High(LLogprobsToken) do
+    begin
+      LSortedLogprobs[J] :=
+        TPair<Single, Integer>.Create(
+          LLogprobsToken[J],
+          J);
+    end;
 
-    LTokenLogprobs := LTokenLogprobs + [LLogprobsToken[LToken]];
+    TArray.Sort<TPair<Single, Integer>>(
+      LSortedLogprobs,
+      TComparer<TPair<Single, Integer>>.Construct(
+        function(
+          const Left,
+          Right: TPair<Single, Integer>): Integer
+        begin
+          Result :=
+            CompareValue(
+              Right.Value,
+              Left.Value);
+        end));
 
-    LTopLogprob := TDictionary<string, Single>.Create;
+    LTokenLogprobs :=
+      LTokenLogprobs +
+      [LLogprobsToken[LToken]];
+
+    LTopLogprob :=
+      TDictionary<string, Single>.Create;
+
     try
-      for J := Low(LSortedLogprobs) to Min(High(LSortedLogprobs), ASettings.Logprobs - 1) do
+      for J :=
+        Low(LSortedLogprobs) to
+        Min(
+          High(LSortedLogprobs),
+          ASettings.Logprobs - 1) do
       begin
         LTopLogprob.AddOrSetValue(
           FTokenization.Decode(
             [LSortedLogprobs[J].Value],
-            TArrayHelper.Slice<integer>(LAllTokens, Low(LAllTokens), I)),
-          LSortedLogprobs[J].Key
-        );
+            TArrayHelper.Slice<Integer>(
+              LAllTokens,
+              Low(LAllTokens),
+              I)),
+          LSortedLogprobs[J].Key);
       end;
 
-      LTopLogprob.AddOrSetValue(LTokenStr, LLogprobsToken[LToken]);
-      LTopLobprobs := LTopLobprobs + [LTopLogprob.ToArray()];
+      LTopLogprob.AddOrSetValue(
+        LTokenStr,
+        LLogprobsToken[LToken]);
+
+      LTopLobprobs :=
+        LTopLobprobs +
+        [LTopLogprob.ToArray];
     finally
       LTopLogprob.Free;
     end;
   end;
 
-  if ASettings.Echo and (Length(LAllTokens) > 0) then
+  if ASettings.Echo and
+     (Length(LAllTokens) > 0) then
   begin
     LTokenLogprobs[0] := 0;
     LTopLobprobs[0] := nil;
   end;
 
-  Result := TCompletionLogprobs.Create(
-    LTextOffsets,
-    LTokenLogprobs,
-    LTokens,
-    LTopLobprobs
-  );
+  Result :=
+    TCompletionLogprobs.Create(
+      LTextOffsets,
+      LTokenLogprobs,
+      LTokens,
+      LTopLobprobs);
 end;
 
 end.

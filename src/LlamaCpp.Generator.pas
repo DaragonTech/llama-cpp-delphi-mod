@@ -17,16 +17,18 @@ type
     FDraftModel: ILlamaDraftModel;
     FSampler: ILlamaSampler;
     FEvaluator: ILlamaEvaluator;
+
     [weak]
     FLlama: ILlama;
+
   public
     constructor Create(const ALlama: ILlama);
 
     procedure Generate(
-            ATokens: TArray<integer>;
+      ATokens: TArray<Integer>;
       const ASettings: TLlamaSamplerSettings;
       const ACallback: TGeneratorCallback;
-      const AReset: boolean = true;
+      const AReset: Boolean = True;
       const AStoppingCriteria: IStoppingCriteriaList = nil;
       const ALogitsProcessor: ILogitsProcessorList = nil;
       const AGrammar: ILlamaGrammar = nil);
@@ -50,42 +52,65 @@ begin
   FLlama := ALlama;
 end;
 
-procedure TLlamaGenerator.Generate(ATokens: TArray<integer>;
-  const ASettings: TLlamaSamplerSettings; const ACallback: TGeneratorCallback;
-  const AReset: boolean; const AStoppingCriteria: IStoppingCriteriaList;
-  const ALogitsProcessor: ILogitsProcessorList; const AGrammar: ILlamaGrammar);
+procedure TLlamaGenerator.Generate(
+  ATokens: TArray<Integer>;
+  const ASettings: TLlamaSamplerSettings;
+  const ACallback: TGeneratorCallback;
+  const AReset: Boolean;
+  const AStoppingCriteria: IStoppingCriteriaList;
+  const ALogitsProcessor: ILogitsProcessorList;
+  const AGrammar: ILlamaGrammar);
 var
-  I: integer;
-  J: integer;
-  LReset: boolean;
-  LLongestPrefix: integer;
-  LSampleIdx: integer;
-  LTokens: TList<integer>;
-  LToken: integer;
-  LContinue: boolean;
-  LInputIds: TArray<integer>;
-  LScores: TArray<TArray<single>>;
-  LTokensOrNone: TArray<integer>;
-  LDraftTokens: TArray<integer>;
+  I: Integer;
+  J: Integer;
+  LReset: Boolean;
+  LLongestPrefix: Integer;
+  LSampleIdx: Integer;
+  LTokens: TList<Integer>;
+  LToken: Integer;
+  LContinue: Boolean;
+  LInputIds: TArray<Integer>;
+  LScores: TArray<TArray<Single>>;
+  LTokensOrNone: TArray<Integer>;
+  LDraftTokens: TArray<Integer>;
   LSampler: TLlamaSampler;
+  LTempTokens: TArray<Integer>;
 begin
-  Assert(Assigned(ACallback), 'Param "ACallback" not assigned.');
+  Assert(
+    Assigned(ACallback),
+    'Param "ACallback" not assigned.');
 
-  //FMirostatMu := 2.0 * ASettings.MirostatTau;
   LReset := AReset;
-  LContinue := true;
-  LInputIds := TInputIdHelper.InputId(FLlama.InputIds, FLlama.NumberOfTokens);
-  LScores := TScoresHelper.Scores(FLlama.Scores, FLlama.NumberOfTokens);
+  LContinue := True;
 
-  LSampler := TLlamaSampler.Create();
+  LInputIds :=
+    TInputIdHelper.InputId(
+      FLlama.InputIds,
+      FLlama.NumberOfTokens);
+
+  LScores :=
+    TScoresHelper.Scores(
+      FLlama.Scores,
+      FLlama.NumberOfTokens);
+
+  LSampler := TLlamaSampler.Create;
   try
     FSampler.InitSampler(
-      LInputIds, ASettings, LSampler, ALogitsProcessor, AGrammar);
+      LInputIds,
+      ASettings,
+      LSampler,
+      ALogitsProcessor,
+      AGrammar);
 
-    if LReset and (FLlama.NumberOfTokens > 0) then
+    if LReset and
+       (FLlama.NumberOfTokens > 0) then
     begin
       LLongestPrefix := 0;
-      for I := 0 to Min(High(LInputIds), High(ATokens) - 1) do
+
+      for I := 0 to
+        Min(
+          High(LInputIds),
+          High(ATokens) - 1) do
       begin
         if LInputIds[I] = ATokens[I] then
           Inc(LLongestPrefix)
@@ -95,53 +120,106 @@ begin
 
       if LLongestPrefix > 0 then
       begin
-        LReset := false;
-        ATokens := TArrayHelper.Slice<integer>(ATokens, LLongestPrefix);
-        FLlama.NumberOfTokens := LLongestPrefix;
+        LReset := False;
+
+        ATokens :=
+          TArrayHelper.Slice<Integer>(
+            ATokens,
+            LLongestPrefix);
+
+        FLlama.NumberOfTokens :=
+          LLongestPrefix;
       end;
     end;
 
     if LReset then
-      FLlama.Reset();
+      FLlama.Reset;
 
-    LSampleIdx := FLlama.NumberOfTokens + Length(ATokens) - 1;
-    LTokens := TList<integer>.Create(ATokens);
+    LSampleIdx :=
+      FLlama.NumberOfTokens +
+      Length(ATokens) - 1;
+
+    LTokens := TList<Integer>.Create;
     try
-      while true do
-      begin
-        FEvaluator.Eval(LTokens.ToArray());
+      {
+        Delphi 10.2 does not support:
 
-        while LSampleIdx < FLlama.NumberOfTokens do
+          TList<Integer>.Create(ATokens)
+
+        so create the list first and then add the array.
+      }
+      if Length(ATokens) > 0 then
+        LTokens.AddRange(ATokens);
+
+      while True do
+      begin
+        LTempTokens := LTokens.ToArray;
+
+        FEvaluator.Eval(
+          LTempTokens);
+
+        while LSampleIdx <
+              FLlama.NumberOfTokens do
         begin
-          LToken := FSampler.Sample(FLlama.NumberOfTokens, ASettings, LSampler, LSampleIdx);
+          LToken :=
+            FSampler.Sample(
+              FLlama.NumberOfTokens,
+              ASettings,
+              LSampler,
+              LSampleIdx);
+
           Inc(LSampleIdx);
 
           if Assigned(AStoppingCriteria) then
           begin
-            LInputIds := TInputIdHelper.InputId(FLlama.InputIds, FLlama.NumberOfTokens);
+            LInputIds :=
+              TInputIdHelper.InputId(
+                FLlama.InputIds,
+                FLlama.NumberOfTokens);
+
             if AStoppingCriteria.Execute(
-                TArrayHelper.Slice<integer>(LInputIds, Low(LInputIds), LSampleIdx),
-                LScores[LSampleIdx - FLlama.NumberOfTokens]
-            ) then
+              TArrayHelper.Slice<Integer>(
+                LInputIds,
+                Low(LInputIds),
+                LSampleIdx),
+              LScores[
+                LSampleIdx -
+                FLlama.NumberOfTokens]) then
+            begin
               Exit;
+            end;
           end;
 
-          LTokensOrNone := ACallback(LToken, LContinue);
+          LTokensOrNone :=
+            ACallback(
+              LToken,
+              LContinue);
 
           if not LContinue then
             Exit;
 
-          //SetLength(LTokensOrNone, 0);
           LTokens.Clear;
-          LTokens.Add(LToken);
 
-          if Assigned(LTokensOrNone) then
-            LTokens.AddRange(LTokensOrNone);
+          LTokens.Add(
+            LToken);
 
-          if (LSampleIdx < FLlama.NumberOfTokens) and (LToken <> LInputIds[LSampleIdx]) then
+          if Length(LTokensOrNone) > 0 then
+            LTokens.AddRange(
+              LTokensOrNone);
+
+          if (LSampleIdx <
+              FLlama.NumberOfTokens) and
+             (LToken <>
+              LInputIds[LSampleIdx]) then
           begin
-            FLlama.NumberOfTokens := LSampleIdx;
-            FContext.KvCacheSeqRm(-1, FLlama.NumberOfTokens, -1);
+            FLlama.NumberOfTokens :=
+              LSampleIdx;
+
+            FContext.KvCacheSeqRm(
+              -1,
+              FLlama.NumberOfTokens,
+              -1);
+
             Break;
           end;
         end;
@@ -149,32 +227,45 @@ begin
         if Assigned(FDraftModel) then
         begin
           J := 0;
-          for I := FLlama.NumberOfTokens to FLlama.NumberOfTokens + LTokens.Count - 1 do
+
+          for I :=
+            FLlama.NumberOfTokens to
+            FLlama.NumberOfTokens +
+            LTokens.Count - 1 do
           begin
-            FLlama.InputIds[I] := LTokens[J];
+            FLlama.InputIds[I] :=
+              LTokens[J];
+
             Inc(J);
           end;
 
-          LDraftTokens := FDraftModel.Execute(
-            TArrayHelper.Slice<integer>(
-              FLlama.InputIds, Low(FLlama.InputIds), FLlama.NumberOfTokens + LTokens.Count)
-          );
+          LDraftTokens :=
+            FDraftModel.Execute(
+              TArrayHelper.Slice<Integer>(
+                FLlama.InputIds,
+                Low(FLlama.InputIds),
+                FLlama.NumberOfTokens +
+                LTokens.Count));
 
-          if Assigned(LDraftTokens) then
+          if Length(LDraftTokens) > 0 then
+          begin
             LTokens.AddRange(
-              TArrayHelper.Slice<integer>(
+              TArrayHelper.Slice<Integer>(
                 LDraftTokens,
                 Low(LDraftTokens),
-                FContext.NCtx() - FLlama.NumberOfTokens - LTokens.Count
-              )
-            );
+                FContext.NCtx -
+                FLlama.NumberOfTokens -
+                LTokens.Count));
+          end;
         end;
       end;
+
     finally
       LTokens.Free;
     end;
+
   finally
-    LSampler.Free();
+    LSampler.Free;
   end;
 end;
 

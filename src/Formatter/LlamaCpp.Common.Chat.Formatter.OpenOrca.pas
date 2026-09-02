@@ -13,8 +13,9 @@ uses
 type
   TOpenOrcaChatFormatter = class(TInterfacedObject, ILlamaChatFormater)
   private
-    function Format(const ASettings: TLlamaChatCompletionSettings)
-    : TChatFormatterResponse;
+    function Format(
+      const ASettings: TLlamaChatCompletionSettings):
+      TChatFormatterResponse;
   end;
 
 implementation
@@ -22,7 +23,8 @@ implementation
 { TOpenOrcaChatFormatter }
 
 function TOpenOrcaChatFormatter.Format(
-  const ASettings: TLlamaChatCompletionSettings): TChatFormatterResponse;
+  const ASettings: TLlamaChatCompletionSettings):
+  TChatFormatterResponse;
 var
   LRoles: TDictionary<string, string>;
   LSystemMessage: string;
@@ -32,38 +34,58 @@ var
   LPrompt: string;
 begin
   LSystemMessage :=
-  '''
-  You are a helpful assistant. Please answer truthfully and write out your
-  thinking step by step to be sure you get the right answer. If you make a mistake or encounter
-  an error in your thinking, say so out loud and attempt to correct it. If you don't know or
-  aren't sure about something, say so clearly. You will act as a professional logician, mathematician,
-  and physicist. You will also act as the most appropriate type of expert to answer any particular
-  question or solve the relevant problem; state which expert type your are, if so. Also think of
-  any particular named expert that would be ideal to answer the relevant question or solve the
-  relevant problem; name and act as them, if appropriate.
-  ''';
+    'You are a helpful assistant. Please answer truthfully and write out your ' +
+    'thinking step by step to be sure you get the right answer. If you make a ' +
+    'mistake or encounter an error in your thinking, say so out loud and attempt ' +
+    'to correct it. If you don''t know or aren''t sure about something, say so ' +
+    'clearly. You will act as a professional logician, mathematician, and physicist. ' +
+    'You will also act as the most appropriate type of expert to answer any particular ' +
+    'question or solve the relevant problem; state which expert type your are, if so. ' +
+    'Also think of any particular named expert that would be ideal to answer the ' +
+    'relevant question or solve the relevant problem; name and act as them, if appropriate.';
 
   LStop := 'User';
 
-  LRoles := TDictionary<string, string>.Create();
+  LRoles := TDictionary<string, string>.Create;
   try
-    LRoles.Add('User', 'User');
-    LRoles.Add('Assistant', 'Assistant');
+    LRoles.Add(
+      'User',
+      'User');
 
-    LSeparator := '<|end_of_turn|>' + sLineBreak;
+    LRoles.Add(
+      'Assistant',
+      'Assistant');
 
-    LMessages := TLlamaChatFormat.MapRoles(ASettings.Messages, LRoles);
-    LMessages := LMessages + [
-      TPair<string, string>.Create(LRoles['Assistant'], '')];
+    LSeparator :=
+      '<|end_of_turn|>' +
+      sLineBreak;
+
+    LMessages :=
+      TLlamaChatFormat.MapRoles(
+        ASettings.Messages,
+        LRoles);
+
+    LMessages :=
+      LMessages +
+      [
+        TPair<string, string>.Create(
+          LRoles['Assistant'],
+          '')
+      ];
   finally
-    LRoles.Free();
+    LRoles.Free;
   end;
 
-  LPrompt := TLlamaChatFormat.FormatAddColonSingle(
-    LSystemMessage, LMessages, LSeparator);
+  LPrompt :=
+    TLlamaChatFormat.FormatAddColonSingle(
+      LSystemMessage,
+      LMessages,
+      LSeparator);
 
-  Result := TChatFormatterResponse.Create(LPrompt, [LStop]);
-
+  Result :=
+    TChatFormatterResponse.Create(
+      LPrompt,
+      [LStop]);
 end;
 
 end.

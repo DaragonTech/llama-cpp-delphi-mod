@@ -660,8 +660,9 @@ var
 function TVariantConverter.ReadJson(const AReader: TJsonReader;
   ATypeInf: PTypeInfo; const AExistingValue: TValue;
   const ASerializer: TJsonSerializer): TValue;
+var
+  LData: variant;
 begin
-  var
   LData := AReader.Value.AsType<variant>;
 
   if VarIsEmpty(LData) or VarIsNull(LData) then
@@ -677,8 +678,9 @@ end;
 
 procedure TVariantConverter.WriteJson(const AWriter: TJsonWriter;
   const AValue: TValue; const ASerializer: TJsonSerializer);
+var
+  LData: variant;
 begin
-  var
   LData := AValue.AsType<variant>;
 
   if VarIsEmpty(LData) or VarIsNull(LData) then
@@ -699,12 +701,13 @@ constructor TCreateEmbeddingResponse.Create(const AModelName: string;
 var
   I: integer;
   LEmbdList: TList<LlamaCpp.Common.Chat.Types.TEmbedding<TArray<Single>>>;
+  LEmbd : LlamaCpp.Common.Chat.Types.TEmbedding<TArray<Single>>;
 begin
   LEmbdList := TList<LlamaCpp.Common.Chat.Types.TEmbedding<TArray<Single>>>.Create();
   try
     for I := Low(AData) to High(AData) do
     begin
-       var LEmbd := Default(LlamaCpp.Common.Chat.Types.TEmbedding<TArray<Single>>);
+       //var LEmbd := Default(LlamaCpp.Common.Chat.Types.TEmbedding<TArray<Single>>);
        LEmbd.&Object := 'embedding';
        LEmbd.Index := I;
        LEmbd.Embedding := AData[I];

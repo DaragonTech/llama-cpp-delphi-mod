@@ -19,6 +19,7 @@ uses
   LlamaCpp.Common.Chat.Formatter.Alpaca,
   LlamaCpp.Common.Chat.Formatter.Qwen,
   LlamaCpp.Common.Chat.Formatter.Vicuna,
+  LlamaCpp.Common.Chat.Formatter.DeepSeek,
   LlamaCpp.Common.Chat.Formatter.OasstLlama,
   LlamaCpp.Common.Chat.Formatter.Baichuan,
   LlamaCpp.Common.Chat.Formatter.Baichuan2,
@@ -61,6 +62,10 @@ begin
   TLlamaChatCompletionCollection.Instance.RegisterChatCompletionHandler(
     'vicuna', TChatFormaterAdapter.ToChatCompletionHandler(
       TVicunaChatFormatter.Create()));
+
+  TLlamaChatCompletionCollection.Instance.RegisterChatCompletionHandler(
+    'deepseek', TChatFormaterAdapter.ToChatCompletionHandler(
+      TDeepSeekChatFormatter.Create()));
 
   TLlamaChatCompletionCollection.Instance.RegisterChatCompletionHandler(
     'oasst_llama', TChatFormaterAdapter.ToChatCompletionHandler(
@@ -155,6 +160,7 @@ begin
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('baichuan-2');
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('baichuan');
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('oasst_llama');
+  TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('deepseek');
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('vicuna');
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('qwen');
   TLlamaChatCompletionCollection.Instance.UnregisterChatHandler('alpaca');
