@@ -1,145 +1,80 @@
-# 🐫 llama-cpp-delphi
+# llama-cpp-delphi Mod
 
-Welcome to **llama-cpp-delphi**, the Delphi bindings for [llama.cpp](https://github.com/ggerganov/llama.cpp)! This project allows you to integrate the power of Llama-based Large Language Models (LLMs) into your Delphi applications, enabling efficient and versatile local inference.
+> **Delphi meets local AI. No cloud. No ceremony. Just code.**
 
-## 🚀 Features
+This is a fork of **llama-cpp-delphi**, modified by **DaragonTech** with
+a focus on simplicity, compatibility, and getting local LLMs running
+inside Delphi without unnecessary friction.
 
-- **Delphi Integration**: Harness Llama models directly in your Delphi projects.
-- **Local Inference**: No external servers or APIs required—your data stays local.
-- **Cross-Platform Support**: Compatible with Windows, Linux, and Mac.
-  - 🖥️ **Mac Silicon**: GPU (MPS) and CPU inference supported.
-  - 💻 **Windows**: CPU inference supported, with options for CUDA, Vulkan, Kompute, and OpenBLAS.
-  - 🌏 **Linux**: CPU inference supported, with options for CUDA, Vulkan, Kompute, and OpenBLAS.
-  - 🚀 **Android and iOS support coming soon!**
-- **Pre-Built Libraries**: Simplified setup with pre-compiled libraries.
-- **Customizable Sampling**: Fine-tune your AI’s behavior with easy-to-configure samplers.
+A few things have changed from upstream.
 
-## 🔧 Getting Started
+## KEEP IT SIMPLE
 
-### Prerequisites
+The original VCL demos have been replaced with **two CLI utilities**.
 
-1. **Delphi IDE** installed.
-2. **Git** installed (required for cloning model repositories).
-3. A basic understanding of Delphi development.
+Personally, I found the original GUI samples a little too complex for
+developers who just want to experiment with local AI, understand how the
+library works, and start coding.
 
-### Installation
+The CLI examples keep the path from **zero to inference** short.
 
-1. Clone the **llama-cpp-delphi** repository:
-   ```bash
-   git clone https://github.com/Embarcadero/llama-cpp-delphi.git
-   ```
-2. Open the project in Delphi IDE.
-3. Build the project for your desired platform(s):
-   - Windows
-   - Linux
-   - Mac Silicon
+## KEEP IT SIMPLE --- PART 2
 
-### Libraries
+No Delphi package to install.
 
-The necessary **llama.cpp** libraries are distributed as part of the releases of this repository. You can find them under the "Release" section in the repository. Here's an explanation of the libraries available:
+No component to drop onto a form.
 
-#### CPU Build
+Just add:
 
-CPU-only builds for Windows, Linux, and macOS. Inference runs slow on CPU—consider using a GPU-based library.
+``` text
+src
+src/Formatter
+```
 
-#### BLAS Build
+to your Delphi search path and start coding.
 
-Building the program with BLAS support may lead to some performance improvements in prompt processing using batch sizes higher than 32 (the default is 512). Using BLAS doesn't affect the generation performance. There are several different BLAS implementations available for build and use:
+Some may consider this a regression. Personally, I don't.
 
-- **Accelerate Framework**: Available on macOS, enabled by default.
-- **OpenBLAS**: Provides CPU-based BLAS acceleration. Ensure OpenBLAS is installed on your machine.
-- **BLIS**: A high-performance portable BLAS framework. [Learn more](https://github.com/flame/blis).
-- **Intel oneMKL**: Optimized for Intel processors, supporting advanced instruction sets like avx\_vnni.
+## DEEPSEEK SUPPORT
 
-#### SYCL
+A **DeepSeek formatter** has been added, allowing DeepSeek models to be
+used through the library.
 
-SYCL is a higher-level programming model to improve programming productivity on various hardware accelerators.
+## GPUUTILS
 
-llama.cpp based on SYCL is used to **support Intel GPU** (Data Center Max series, Flex series, Arc series, Built-in GPU and iGPU).
+A new `GPUUtils` unit provides convenient GPU detection functionality.
 
-For detailed info, please refer to [[llama.cpp for SYCL](./backend/SYCL.md)](https://github.com/ggerganov/llama.cpp/blob/master/docs/backend/SYCL.md).
+Use it to determine whether a supported GPU/backend is available before
+deciding how your model should run.
 
-#### Metal Build
+## DELPHI 10 SUPPORT
 
-On MacOS, Metal is enabled by default. Using Metal makes the computation run on the GPU.
+Still running an older Delphi toolchain?
 
-When built with Metal support, you can explicitly disable GPU inference with the `--n-gpu-layers 0` option in the Llama settings.
+No problem.
 
-#### CUDA
+This fork includes changes to maintain **Delphi 10 compatibility**, making it possible to compile the project without requiring the latest Delphi release.
 
-Provides GPU acceleration using an NVIDIA GPU. [Refer to the CUDA guide](https://github.com/ggerganov/llama.cpp/blob/master/docs/cuda-fedora.md) for Fedora setup.
+Legacy compiler. Modern AI.
 
-#### Vulkan
+## CREATECHATCOMPLETION FIX
 
-Vulkan provides GPU acceleration through a modern, low-overhead API. To use Vulkan:
+A fix for `CreateChatCompletion` has been integrated.
 
-* Ensure Vulkan is installed and supported by your GPU drivers.
+Credit goes to **@Krekeler** for the fix!
 
-Learn more at the [official Vulkan site](https://vulkan.org).
+## UPSTREAM README
 
-#### Kompute
+Want the full details about the original **llama-cpp-delphi** project?
 
-Kompute offers efficient compute operations for GPU workloads. It's designed for AI inference tasks and works seamlessly with Vulkan.
+The original, pre-fork README is preserved as: `README.original.md`
 
-#### CANN
+## LICENSE
 
-Provides NPU acceleration using the AI cores of Ascend NPUs. [Learn more about CANN](https://www.hiascend.com/en/software/cann).
+This project is licensed under the **MIT License**.
 
-#### SYCL
+See: `LICENSE` for details.
 
-SYCL enables GPU acceleration on Intel GPUs. Refer to the [SYCL documentation](https://github.com/ggerganov/llama.cpp/blob/master/docs/backend/SYCL.md) for setup details.
+------------------------------------------------------------------------
 
-#### HIP
-
-Supports GPU acceleration on AMD GPUs compatible with HIP.
-
-#### MUSA
-
-Provides GPU acceleration using the MUSA cores of Moore Threads MTT GPUs.
-
-## 🌟 Using llama-cpp-delphi
-
-### Key Components
-
-- **Llama**: Delphi-friendly IDE component.
-
-### Running Samples
-
-1. Explore the `samples` directory for available examples, like **SimpleChatWithDownload**.
-2. Follow the README provided in each sample folder for detailed instructions.
-
-## 🔧 Configuration
-
-### Models
-
-You can use any model compatible with **llama.cpp** (e.g., GGUF format). Popular options include:
-- **Llama-2**: A robust and general-purpose model.
-- **Llama-3**: A lightweight alternative with excellent performance.
-- **Mistral**: A compact and efficient model.
-- **DeepSeek**: An innovative model designed for exploratory tasks.
-
-### Hardware Support
-
-- **Mac Silicon**:
-  - GPU inference (via MPS) is recommended for optimal performance.
-  - CPU inference is available but slower.
-- **Windows**:
-  - CPU inference supported, with additional support for CUDA, Vulkan, Kompute, HIP, and OpenBLAS.
-- **Linux**:
-  - CPU inference supported, with additional support for CUDA, Vulkan, HIP, and MUSA.
-
-## 🤝 Contributions
-
-We welcome contributions to improve **llama-cpp-delphi**! Feel free to:
-- Report issues.
-- Submit pull requests.
-- Suggest enhancements.
-
-## 📝 License
-
-This project is licensed under the MIT License—see the `LICENSE` file for details.
-
-## 🌟 Final Notes
-
-Get started with **llama-cpp-delphi** and bring advanced AI capabilities to your Delphi projects. If you encounter any issues or have suggestions, let us know—we’re here to help! Happy coding! 🎉
-
+**llama.cpp + Delphi // local inference // your machine // your rules**
