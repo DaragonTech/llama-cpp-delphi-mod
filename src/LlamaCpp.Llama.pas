@@ -239,6 +239,7 @@ type
     FOnChatCompletionStream: TLlamaChatCompletionStream;
     FOnChatCompletionStreamComplete: TLlamaChatCompletionStreamComplete;
 
+    function GetNativeContext: PLlamaContext;
     procedure SetSettings(const Value: TLlamaSettings);
 
   protected
@@ -377,6 +378,10 @@ type
       const ALogitsProcessor: ILogitsProcessorList = nil;
       const AGrammar: ILlamaGrammar = nil):
       IAsyncResult;
+      
+      // FD: Added Native Context
+      property NativeContext: PLlamaContext
+         read GetNativeContext;
 
   published
     property AutoLoad: Boolean
@@ -497,6 +502,27 @@ begin
   inherited;
 end;
 
+// FD: Added Get Native Context function
+function TLlama.GetNativeContext: PLlamaContext;
+var
+  LBase: TLlamaBase;
+  LContext: TLlamaContext;
+begin
+  Result := nil;
+
+  if not Assigned(FLlamaBase) then
+    Exit;
+
+  LBase := FLlamaBase as TLlamaBase;
+
+  LContext := LBase.GetContext;
+
+  if not Assigned(LContext) then
+    Exit;
+
+  Result := LContext.Context;
+end;
+
 procedure TLlamaBase.Init(
   const AModelPath: string;
   const ASettings: TLlamaSettings;
@@ -588,6 +614,9 @@ begin
 
   FContextParams :=
     TLlamaApi.Instance.llama_context_default_params;
+
+  // FD: Allow enabling performance metrics
+  FContextParams.NoPerformance := not FSettings.EnablePerformanceMetrics;
 
   FContextParams.NContext :=
     FSettings.NCtx;

@@ -52,6 +52,7 @@ type
     FTypeK: TGGMLType;
     FTypeV: TGGMLType;
     FSPMInfill: Boolean;
+    FEnablePerformanceMetrics: Boolean; // FD: added
     FVerbose: Boolean;
   public
     constructor Create(const ANGpuLayers: Integer = 0;
@@ -97,6 +98,7 @@ type
     procedure Assign(Source: TPersistent); override;
   published
     // Properties
+    property EnablePerformanceMetrics: Boolean read FEnablePerformanceMetrics write FEnablePerformanceMetrics; // FD: added
     property NGpuLayers: Integer read FNGpuLayers write FNGpuLayers;
     property SplitMode: TLlamaSplitMode read FSplitMode write FSplitMode;
     property MainGpu: Int32 read FMainGpu write FMainGpu;
@@ -345,6 +347,7 @@ begin
   FTypeV := ATypeV;
   FSPMInfill := ASPMInfill;
   FVerbose := AVerbose;
+  FEnablePerformanceMetrics := False; // FD: added
 end;
 
 
@@ -393,6 +396,7 @@ begin
     FTypeV := LSource.FTypeV;
     FSPMInfill := LSource.FSPMInfill;
     FVerbose := LSource.FVerbose;
+    FEnablePerformanceMetrics := LSource.FEnablePerformanceMetrics; // FD: added
   end
   else
     inherited Assign(Source);
