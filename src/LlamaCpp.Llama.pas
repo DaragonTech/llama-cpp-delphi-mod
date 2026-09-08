@@ -561,6 +561,11 @@ begin
   FModelParams.VocabOnly :=
     FSettings.VocabOnly;
 
+  // FD: Propagate the setting
+  FModelParams.UseMMap :=
+    FSettings.UseMMap;
+
+  // LoRA currently requires mmap disabled in this wrapper.
   if FSettings.LoraPath <> '' then
     FModelParams.UseMMap := False;
 
